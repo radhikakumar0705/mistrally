@@ -1,6 +1,5 @@
 # Mistrally
 
-**Description:**  
 An AI-powered chat application with secure login, persistent chat memory, and intelligent contextual responses.
 
 ---
