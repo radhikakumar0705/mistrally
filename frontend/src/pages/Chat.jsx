@@ -1,6 +1,7 @@
 import { Menu } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import Composer from "../components/chat/Composer";
 import EmptyState from "../components/chat/EmptyState";
 import MessageList from "../components/chat/MessageList";
@@ -13,12 +14,22 @@ import { useDocuments } from "../hooks/useDocuments";
 export default function ChatPage() {
   const chat = useChat();
   const documents = useDocuments();
-  const { user, logout } = useAuth();
+  const { user, logout, googleEnabled } = useAuth();
+  const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const { sessionId } = useParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const { currentId, selectSession } = chat;
+
+  // Result of "Connect Google" (the backend redirects back here)
+  useEffect(() => {
+    const google = params.get("google");
+    if (!google) return;
+    if (google === "linked") toast.success("Google account connected");
+    else if (google === "already_linked") toast.error("That Google account is already used by another Mistrally account");
+    setParams({}, { replace: true });
+  }, [params, setParams]);
 
   // Keep the URL and the open chat in sync: /chat/42 opens chat 42, and back/forward work
   useEffect(() => {
@@ -54,6 +65,7 @@ export default function ChatPage() {
         onDelete={chat.removeSession}
         documents={documents}
         user={user}
+        googleEnabled={googleEnabled}
         onLogout={logout}
       />
 

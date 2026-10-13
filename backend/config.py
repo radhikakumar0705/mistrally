@@ -26,7 +26,25 @@ class Config:
     # Required; create_app() refuses to start without them
     SECRET_KEY = os.getenv("SECRET_KEY")
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=int(os.getenv("JWT_EXPIRES_HOURS", "12")))
+    # Short-lived access tokens (sent as Bearer headers, kept in memory by the frontend) plus
+    # long-lived refresh tokens in an httpOnly cookie, rotated on every use
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=int(os.getenv("JWT_ACCESS_MINUTES", "15")))
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=int(os.getenv("JWT_REFRESH_DAYS", "30")))
+    JWT_TOKEN_LOCATION = ["headers", "cookies"]
+    JWT_REFRESH_COOKIE_PATH = os.getenv("JWT_REFRESH_COOKIE_PATH", "/api/auth/")
+    JWT_REFRESH_CSRF_COOKIE_PATH = "/"
+    JWT_COOKIE_CSRF_PROTECT = True  # double-submit: the X-CSRF-TOKEN header must match a readable cookie
+    JWT_COOKIE_SAMESITE = "Strict"
+    COOKIE_SECURE = _bool("COOKIE_SECURE", False)  # True whenever the site is served over HTTPS
+    JWT_COOKIE_SECURE = COOKIE_SECURE
+    SESSION_COOKIE_SECURE = COOKIE_SECURE
+    SESSION_COOKIE_SAMESITE = "Lax"  # the OAuth state cookie must survive the redirect back from Google
+    SESSION_COOKIE_HTTPONLY = True
+
+    # Public origin of the site, used to build the Google OAuth redirect URI
+    PUBLIC_URL = os.getenv("PUBLIC_URL", "http://localhost:5173").rstrip("/")
+    GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+    GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 
     SQLALCHEMY_DATABASE_URI = _database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False

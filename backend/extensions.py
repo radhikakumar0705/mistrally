@@ -1,3 +1,4 @@
+from authlib.integrations.flask_client import OAuth
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager, get_jwt_identity, verify_jwt_in_request
 from flask_limiter import Limiter
@@ -10,6 +11,7 @@ bcrypt = Bcrypt()
 jwt = JWTManager()
 migrate = Migrate()
 limiter = Limiter(key_func=get_remote_address)
+oauth = OAuth()
 
 
 def user_or_ip():

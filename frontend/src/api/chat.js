@@ -1,4 +1,4 @@
-import axiosClient, { API_BASE, authHeader, handleUnauthorized } from "./axiosClient";
+import axiosClient, { API_BASE, authHeader, endSession, refreshSession } from "./axiosClient";
 import { parseSSE } from "../lib/sse";
 
 export const getChatSessions = async () => (await axiosClient.get("/chat/sessions")).data;
@@ -21,15 +21,26 @@ export const getModels = async () => (await axiosClient.get("/chat/models")).dat
  * incremental reads and cancellation through an AbortSignal.
  */
 async function streamRequest(path, body, { signal, onEvent }) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeader() },
-    body: JSON.stringify(body ?? {}),
-    signal,
-  });
+  const send = () =>
+    fetch(`${API_BASE}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeader() },
+      body: JSON.stringify(body ?? {}),
+      signal,
+    });
+
+  let response = await send();
+  if (response.status === 401) {
+    // The access token expired mid-session: refresh once and retry
+    try {
+      await refreshSession();
+      response = await send();
+    } catch {
+      endSession({ expired: true });
+    }
+  }
 
   if (!response.ok) {
-    if (response.status === 401) handleUnauthorized();
     let message = `Request failed (${response.status})`;
     try {
       message = (await response.json()).error || message;

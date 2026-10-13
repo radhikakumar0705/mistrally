@@ -23,6 +23,9 @@ def make_config(tmp_path, **overrides):
         UPLOAD_FOLDER = str(tmp_path / "uploads")
         RATELIMIT_ENABLED = False
         OLLAMA_MODEL = "test-model"
+        JWT_REFRESH_COOKIE_PATH = "/auth/"
+        GOOGLE_CLIENT_ID = None
+        GOOGLE_CLIENT_SECRET = None
 
     for key, value in overrides.items():
         setattr(TestConfig, key, value)

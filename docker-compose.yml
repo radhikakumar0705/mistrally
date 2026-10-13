@@ -12,6 +12,10 @@ name: mistrally
 x-backend-env: &backend-env
   SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env}
   JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in .env}
+  PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8090}
+  COOKIE_SECURE: ${COOKIE_SECURE:-false}
+  GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+  GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
   DB_HOST: mysql
   DB_PORT: "3306"
   DB_NAME: mistrally

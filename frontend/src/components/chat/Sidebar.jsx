@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
+import authApi from "../../api/auth";
 import Logo from "../Logo";
 import { groupByDate } from "../../lib/dates";
 
@@ -196,6 +197,7 @@ export default function Sidebar({
   onDelete,
   documents,
   user,
+  googleEnabled,
   onLogout,
 }) {
   const [query, setQuery] = useState("");
@@ -297,12 +299,27 @@ export default function Sidebar({
         />
 
         <div className="flex items-center gap-3 border-t border-white/5 px-4 py-3">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 text-sm font-semibold uppercase text-white">
-            {user?.username?.[0] || "?"}
-          </span>
+          {user?.avatar_url ? (
+            <img
+              src={user.avatar_url}
+              alt=""
+              referrerPolicy="no-referrer"
+              className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-white/10"
+            />
+          ) : (
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 text-sm font-semibold uppercase text-white">
+              {user?.username?.[0] || "?"}
+            </span>
+          )}
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-zinc-100">{user?.username || "Signed in"}</p>
-            {user?.email ? <p className="truncate text-xs text-zinc-500">{user.email}</p> : null}
+            <p className="truncate text-sm font-medium text-zinc-100">{user?.name || user?.username || "Signed in"}</p>
+            {googleEnabled && user && !user.google_linked ? (
+              <a href={authApi.googleLinkUrl()} className="text-xs text-violet-300 hover:text-violet-200">
+                Connect Google
+              </a>
+            ) : user?.email ? (
+              <p className="truncate text-xs text-zinc-500">{user.email}</p>
+            ) : null}
           </div>
           <button type="button" onClick={onLogout} className="icon-btn" title="Log out" aria-label="Log out">
             <LogOut className="h-4 w-4" />

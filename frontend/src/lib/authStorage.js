@@ -1,22 +1,46 @@
-const TOKEN_KEY = "token";
-const USER_KEY = "user";
+// The access token lives only in memory (never localStorage), so injected scripts can't read it
+// back later. The refresh token is an httpOnly cookie the browser sends to /api/auth/refresh.
+let accessToken = null;
 
-export const getToken = () => localStorage.getItem(TOKEN_KEY);
+// Remembers that this browser has a session, so anonymous visitors don't trigger a refresh call
+const SESSION_HINT_KEY = "mistrally:session";
 
-export const getStoredUser = () => {
+export const getToken = () => accessToken;
+export const setToken = (token) => {
+  accessToken = token;
+};
+
+export const hasSessionHint = () => {
   try {
-    return JSON.parse(localStorage.getItem(USER_KEY)) || null;
+    return localStorage.getItem(SESSION_HINT_KEY) === "1";
   } catch {
-    return null;
+    return false;
   }
 };
 
-export const storeAuth = (token, user) => {
-  localStorage.setItem(TOKEN_KEY, token);
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
+export const setSessionHint = (on) => {
+  try {
+    if (on) localStorage.setItem(SESSION_HINT_KEY, "1");
+    else localStorage.removeItem(SESSION_HINT_KEY);
+  } catch {
+    // storage blocked; we just try a refresh on every load instead
+  }
 };
 
 export const clearStoredAuth = () => {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(USER_KEY);
+  accessToken = null;
+  setSessionHint(false);
+  try {
+    // tokens stored by older versions of the app
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+  } catch {
+    // ignore
+  }
 };
+
+export const readCookie = (name) =>
+  document.cookie
+    .split("; ")
+    .find((row) => row.startsWith(`${name}=`))
+    ?.slice(name.length + 1);

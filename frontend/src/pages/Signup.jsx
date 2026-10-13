@@ -5,13 +5,14 @@ import auth from "../api/auth";
 import { errorMessage } from "../api/axiosClient";
 import AuthLayout from "../components/AuthLayout";
 import FormField from "../components/FormField";
+import GoogleButton, { OrDivider } from "../components/GoogleButton";
 import { useAuth } from "../context/AuthContext";
 
 export default function Signup() {
   const [form, setForm] = useState({ username: "", email: "", password: "" });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const { login } = useAuth();
+  const { login, googleEnabled } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
@@ -45,6 +46,12 @@ export default function Signup() {
         </>
       }
     >
+      {googleEnabled ? (
+        <>
+          <GoogleButton label="Sign up with Google" />
+          <OrDivider />
+        </>
+      ) : null}
       <form onSubmit={handleSubmit} className="space-y-4">
         {error ? (
           <p role="alert" className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-200">

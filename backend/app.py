@@ -7,7 +7,7 @@ from sqlalchemy import text
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from config import Config
-from extensions import bcrypt, db, jwt, limiter, migrate
+from extensions import bcrypt, db, jwt, limiter, migrate, oauth
 
 MIGRATIONS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "migrations")
 
@@ -38,6 +38,16 @@ def create_app(config_object=Config):
     jwt.init_app(app)
     migrate.init_app(app, db, directory=MIGRATIONS_DIR, render_as_batch=True)
     limiter.init_app(app)
+    oauth.init_app(app)
+    if app.config.get("GOOGLE_CLIENT_ID") and app.config.get("GOOGLE_CLIENT_SECRET"):
+        oauth.register(
+            name="google",
+            client_id=app.config["GOOGLE_CLIENT_ID"],
+            client_secret=app.config["GOOGLE_CLIENT_SECRET"],
+            server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+            client_kwargs={"scope": "openid email profile", "code_challenge_method": "S256"},
+            overwrite=True,
+        )
 
     _register_error_handlers(app)
 
@@ -86,6 +96,18 @@ def _register_error_handlers(app):
     @jwt.unauthorized_loader
     def missing_token(reason):
         return jsonify({"error": reason}), 401
+
+    @jwt.token_in_blocklist_loader
+    def refresh_token_revoked(_header, payload):
+        if payload.get("type") != "refresh":
+            return False  # access tokens are short-lived and stateless
+        from services.token_service import is_refresh_token_revoked
+
+        return is_refresh_token_revoked(payload["jti"], int(payload["sub"]))
+
+    @jwt.revoked_token_loader
+    def revoked_token(_header, _payload):
+        return jsonify({"error": "Your session has ended. Please log in again."}), 401
 
     @app.errorhandler(413)
     def too_large(_error):

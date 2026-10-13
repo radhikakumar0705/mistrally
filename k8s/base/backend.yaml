@@ -45,6 +45,10 @@ spec:
               valueFrom: { secretKeyRef: { name: mistrally-secrets, key: SECRET_KEY } }
             - name: JWT_SECRET_KEY
               valueFrom: { secretKeyRef: { name: mistrally-secrets, key: JWT_SECRET_KEY } }
+            - name: GOOGLE_CLIENT_ID
+              valueFrom: { secretKeyRef: { name: mistrally-secrets, key: GOOGLE_CLIENT_ID, optional: true } }
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom: { secretKeyRef: { name: mistrally-secrets, key: GOOGLE_CLIENT_SECRET, optional: true } }
           startupProbe:
             httpGet: { path: /health/live, port: http }
             periodSeconds: 3

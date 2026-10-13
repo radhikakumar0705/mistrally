@@ -17,4 +17,6 @@ data:
   PROXY_FIX_HOPS: "2"
   UPLOAD_FOLDER: /tmp/uploads
   LOG_LEVEL: INFO
+  PUBLIC_URL: http://mistrally.localhost
+  COOKIE_SECURE: "false"
   WEB_CONCURRENCY: "2"
