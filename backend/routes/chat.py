@@ -6,6 +6,7 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 from extensions import db, limiter, user_or_ip
 from models.chat_history import ChatHistory
 from models.chat_session import DEFAULT_TITLE, ChatSession
+from observability import LLM_STREAMS, RAG_CHUNKS_USED, RAG_RETRIEVAL_SECONDS, StreamMetrics
 from services import chroma_service, llm
 from services.prompts import build_messages
 
@@ -162,7 +163,9 @@ def _sse(event):
 def _stream_reply(session, user_id, user_msg, history, replaces=None):
     # Document retrieval is best-effort: a vector store problem shouldn't block chatting.
     try:
-        chunks = chroma_service.retrieve(user_msg, user_id)
+        with RAG_RETRIEVAL_SECONDS.time():
+            chunks = chroma_service.retrieve(user_msg, user_id)
+        RAG_CHUNKS_USED.observe(len(chunks))
     except Exception:
         current_app.logger.exception("Document retrieval failed")
         chunks = []
@@ -170,9 +173,13 @@ def _stream_reply(session, user_id, user_msg, history, replaces=None):
 
     messages = build_messages(history, chunks, user_msg)
     model = session.model or llm.default_model()
+    provider = current_app.config["LLM_PROVIDER"]
+    # Start timing before the call: providers like Ollama only respond once the first token exists
+    timing = StreamMetrics(provider, model)
     try:
         pieces = llm.stream_chat(messages, model)
     except llm.LLMError as e:
+        LLM_STREAMS.labels(provider=provider, model=model, outcome="unavailable").inc()
         current_app.logger.error("Model request failed: %s", e)
         return jsonify({"error": f"The AI model is unavailable: {e}"}), 502
 
@@ -205,9 +212,11 @@ def _stream_reply(session, user_id, user_msg, history, replaces=None):
             yield _sse({"type": "start", "sources": sources, "model": model})
             try:
                 for piece in pieces:
+                    timing.piece()
                     reply.append(piece)
                     yield _sse({"type": "token", "content": piece})
             except llm.LLMError as e:
+                timing.finish("error")
                 current_app.logger.error("Model stream failed: %s", e)
                 yield _sse({"type": "error", "error": str(e)})
 
@@ -215,10 +224,12 @@ def _stream_reply(session, user_id, user_msg, history, replaces=None):
             if text:
                 entry, session = save(text)
                 saved = True
+                timing.finish("completed")
                 yield _sse({"type": "done", "message": entry.to_dict(), "session": session.to_dict()})
         finally:
             # The client disconnected (e.g. pressed Stop): keep whatever was generated so far
             pieces.close()
+            timing.finish("stopped")  # no-op if the answer already completed or failed
             text = "".join(reply).strip()
             if not saved and text:
                 try:

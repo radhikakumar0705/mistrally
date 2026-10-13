@@ -1,4 +1,3 @@
-import logging
 import os
 
 from flask import Flask, jsonify
@@ -6,6 +5,7 @@ from flask_cors import CORS
 from sqlalchemy import text
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+import observability
 from config import Config
 from extensions import bcrypt, db, jwt, limiter, migrate, oauth
 
@@ -22,10 +22,7 @@ def create_app(config_object=Config):
             f"{', '.join(missing)} not set. Copy backend/.env.example to backend/.env and fill it in."
         )
 
-    logging.basicConfig(
-        level=app.config["LOG_LEVEL"],
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    )
+    observability.configure_logging(app.config["LOG_LEVEL"], app.config["LOG_FORMAT"])
 
     hops = app.config["PROXY_FIX_HOPS"]
     if hops:
@@ -50,6 +47,7 @@ def create_app(config_object=Config):
         )
 
     _register_error_handlers(app)
+    observability.init_app(app)
 
     from routes.auth import auth_bp
     from routes.chat import chat_bp
@@ -79,6 +77,9 @@ def create_app(config_object=Config):
         return jsonify({"status": "ok", "database": "up"}), 200
 
     import models  # noqa: F401  (registers every table with SQLAlchemy and Alembic)
+
+    with app.app_context():
+        observability.configure_tracing(app, db.engine)
 
     return app
 

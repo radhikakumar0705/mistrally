@@ -6,6 +6,9 @@
 # By default the backend uses the Ollama running on your machine (fastest; uses your GPU).
 # To run Ollama in a container too:  docker compose --profile ollama up --build
 # and set OLLAMA_URL=http://ollama:11434 in .env.
+#
+# Monitoring (Prometheus :9090, Grafana :3001, Jaeger :16686):  docker compose --profile monitoring up
+# and set OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317 in .env to send traces.
 
 name: mistrally
 
@@ -33,6 +36,7 @@ x-backend-env: &backend-env
   PROXY_FIX_HOPS: "1"
   UPLOAD_FOLDER: /tmp/uploads
   LOG_LEVEL: INFO
+  OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
 
 services:
   mysql:
@@ -124,7 +128,44 @@ services:
       - ollama
     restart: "no"
 
+  prometheus:
+    profiles: ["monitoring"]
+    image: prom/prometheus:v2.55.1
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+
+  grafana:
+    profiles: ["monitoring"]
+    image: grafana/grafana:11.3.1
+    restart: unless-stopped
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/mistrally-overview.json
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "127.0.0.1:3001:3000"
+    depends_on:
+      - prometheus
+
+  jaeger:
+    profiles: ["monitoring"]
+    image: jaegertracing/all-in-one:1.62.0
+    restart: unless-stopped
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "127.0.0.1:16686:16686"
+
 volumes:
+  prometheus-data:
   mysql-data:
   chroma-data:
   ollama-data:

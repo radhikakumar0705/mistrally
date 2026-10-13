@@ -23,6 +23,10 @@ spec:
   template:
     metadata:
       labels: { app.kubernetes.io/name: backend }
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5000"
+        prometheus.io/path: /metrics
     spec:
       securityContext:
         runAsNonRoot: true

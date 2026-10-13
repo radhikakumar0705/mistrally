@@ -84,4 +84,8 @@ class Config:
     RATELIMIT_HEADERS_ENABLED = True
 
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+    LOG_FORMAT = os.getenv("LOG_FORMAT", "text")  # "json" in containers
+    # Traces go to this OTLP gRPC endpoint (e.g. http://jaeger:4317) when set
+    OTEL_EXPORTER_OTLP_ENDPOINT = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+    OTEL_SERVICE_NAME = os.getenv("OTEL_SERVICE_NAME", "mistrally-backend")
     DEBUG = _bool("DEBUG", False)

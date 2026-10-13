@@ -4,6 +4,7 @@ from flask import Blueprint, current_app, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from extensions import limiter, user_or_ip
+from observability import DOCUMENTS_INGESTED
 from services import chroma_service
 from utils.file_helper import allowed_file, extract_text, save_uploaded_file
 
@@ -41,6 +42,7 @@ def upload_document():
         text = extract_text(path)
     except Exception:
         current_app.logger.exception("Text extraction failed")
+        DOCUMENTS_INGESTED.labels(status="unreadable").inc()
         return jsonify({"error": "Could not read that file"}), 422
     finally:
         os.remove(path)
@@ -52,7 +54,9 @@ def upload_document():
         document = chroma_service.add_document(text, _current_user_id(), file.filename)
     except Exception:
         current_app.logger.exception("Storing document failed")
+        DOCUMENTS_INGESTED.labels(status="failed").inc()
         return jsonify({"error": "The document store is unavailable"}), 503
+    DOCUMENTS_INGESTED.labels(status="ok").inc()
     return jsonify(document), 201
 
 

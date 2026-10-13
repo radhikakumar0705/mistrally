@@ -21,7 +21,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/opt/venv/bin:$PATH" \
     HOME=/home/app \
-    FLASK_APP=wsgi
+    FLASK_APP=wsgi \
+    LOG_FORMAT=json \
+    PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus
 
 RUN useradd --create-home --uid 10001 app
 COPY --from=builder /opt/venv /opt/venv
