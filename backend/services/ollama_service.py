@@ -1,28 +1,47 @@
 import requests
+from flask import current_app
 
-# Local Ollama endpoint (Mistral)
-OLLAMA_API_URL = "http://localhost:11434/api/generate"
-MODEL_NAME = "mistral"
+SYSTEM_PROMPT = (
+    "You are Mistrally, a helpful AI teaching assistant for programmers. "
+    "Give simple, clear explanations, and include code examples whenever the question calls for them."
+)
 
-def query_mistral(prompt: str) -> str:
+
+class OllamaError(Exception):
+    """Raised when the local Ollama server cannot produce a response."""
+
+
+def build_messages(history, context, user_message):
     """
-    Send a prompt to the local Mistral model via Ollama REST API.
+    Build an Ollama /api/chat message list: system prompt (plus any retrieved
+    document context), the previous turns of this conversation, then the new message.
     """
+    system = SYSTEM_PROMPT
+    if context:
+        system += (
+            "\n\nUse these excerpts from the user's uploaded documents when they are relevant:\n"
+            + context
+        )
+
+    messages = [{"role": "system", "content": system}]
+    for turn in history:
+        messages.append({"role": "user", "content": turn.user_message})
+        messages.append({"role": "assistant", "content": turn.bot_response})
+    messages.append({"role": "user", "content": user_message})
+    return messages
+
+
+def chat(messages):
+    """Send a conversation to the local model via Ollama and return its reply."""
+    config = current_app.config
     try:
         response = requests.post(
-            OLLAMA_API_URL,
-            json={
-                "model": MODEL_NAME,
-                "prompt": prompt,
-                "stream": False
-            },
-            timeout=60
+            f"{config['OLLAMA_URL']}/api/chat",
+            json={"model": config["OLLAMA_MODEL"], "messages": messages, "stream": False},
+            timeout=config["OLLAMA_TIMEOUT"],
         )
         response.raise_for_status()
-
-        data = response.json()
-        return data.get("response", "").strip()
-
     except requests.exceptions.RequestException as e:
-        print(f"[ERROR] Ollama request failed: {e}")
-        return "Sorry, I had trouble connecting to the local model."
+        raise OllamaError(str(e)) from e
+
+    return response.json().get("message", {}).get("content", "").strip()

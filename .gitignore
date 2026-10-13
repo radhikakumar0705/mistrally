@@ -56,3 +56,7 @@ Icon?
 # === Misc ===
 /__pycache__/
 /__MACOSX
+
+# === Runtime data (vector store, uploads) ===
+backend/chroma_db/
+backend/data/

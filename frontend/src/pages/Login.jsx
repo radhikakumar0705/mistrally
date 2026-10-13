@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import authApi from "../api/auth";
+import { errorMessage } from "../api/axiosClient";
 
 const Login = () => {
   const [form, setForm] = useState({ username: "", password: "" });
@@ -16,21 +17,15 @@ const Login = () => {
     try {
       const res = await authApi.login(form);
 
-      console.log("Login response:", res.data); // debug line
-
       const token = res.data?.access_token;
       if (!token) {
         throw new Error("No access_token returned from backend");
       }
 
-      // Store token first
       localStorage.setItem("token", token);
-
-      // Small delay ensures state update before redirect
-      setTimeout(() => navigate("/chat"), 100);
+      navigate("/chat");
     } catch (err) {
-      console.error("Login error:", err);
-      setError("Invalid credentials or server issue");
+      setError(errorMessage(err, "Invalid credentials or server issue"));
     }
   };
 

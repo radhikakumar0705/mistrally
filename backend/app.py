@@ -4,16 +4,32 @@ from config import Config
 from extensions import db, bcrypt, jwt
 
 
-def create_app():
+def create_app(config_object=Config):
     app = Flask(__name__)
-    app.config.from_object(Config)
+    app.config.from_object(config_object)
 
-    CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
-
+    CORS(app, resources={r"/*": {"origins": app.config["CORS_ORIGINS"]}})
 
     db.init_app(app)
     bcrypt.init_app(app)
     jwt.init_app(app)
+
+    # Bad or expired tokens all return 401 so the frontend can send the user back to login
+    @jwt.invalid_token_loader
+    def invalid_token(reason):
+        return jsonify({"error": f"Invalid token: {reason}"}), 401
+
+    @jwt.expired_token_loader
+    def expired_token(_header, _payload):
+        return jsonify({"error": "Token has expired"}), 401
+
+    @jwt.unauthorized_loader
+    def missing_token(reason):
+        return jsonify({"error": reason}), 401
+
+    @app.errorhandler(413)
+    def too_large(_error):
+        return jsonify({"error": "File is too large"}), 413
 
     from routes.auth import auth_bp
     from routes.chat import chat_bp
@@ -25,12 +41,14 @@ def create_app():
     def home():
         return jsonify({"message": "Mistrally backend running"}), 200
 
+    with app.app_context():
+        import models  # noqa: F401  (registers every table before create_all)
+        db.create_all()
+
     return app
 
 
 app = create_app()
 
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
-    app.run(debug=True, host="127.0.0.1", port=5000)
+    app.run(debug=app.config["DEBUG"], host="127.0.0.1", port=5000)

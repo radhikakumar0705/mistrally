@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import auth from "../api/auth";
+import { errorMessage } from "../api/axiosClient";
 
 const Signup = () => {
   const [form, setForm] = useState({ username: "", email: "", password: "" });
@@ -16,8 +17,8 @@ const Signup = () => {
     try {
       await auth.signup(form);
       navigate("/login");
-    } catch {
-      setError("Signup failed. Try again.");
+    } catch (err) {
+      setError(errorMessage(err, "Signup failed. Try again."));
     }
   };
 
@@ -46,7 +47,8 @@ const Signup = () => {
         <input
           type="password"
           name="password"
-          placeholder="Password"
+          placeholder="Password (8+ characters)"
+          minLength={8}
           className="w-full mb-4 px-3 py-2 border rounded text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400"
           onChange={handleChange}
           required

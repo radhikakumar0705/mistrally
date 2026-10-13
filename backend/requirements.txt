@@ -16,6 +16,7 @@ python-dotenv==1.0.1
 requests==2.32.3
 chromadb==0.5.5
 sentence-transformers==3.0.1
+pypdf==5.1.0
 
 # Utility dependencies
 numpy==1.26.4

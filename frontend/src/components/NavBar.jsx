@@ -1,15 +1,16 @@
 // src/components/NavBar.jsx
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 const Navbar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    setIsLoggedIn(!!token); // true if token exists
-  }, []);
+    setIsLoggedIn(!!token); // re-checked on every navigation, e.g. right after login
+  }, [location]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
