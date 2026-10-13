@@ -1,0 +1,19 @@
+# Requires an ingress controller such as ingress-nginx (https://kubernetes.github.io/ingress-nginx/deploy/).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mistrally
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"  # stream chat tokens immediately
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-body-size: "12m"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: mistrally.localhost
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: frontend, port: { name: http } }

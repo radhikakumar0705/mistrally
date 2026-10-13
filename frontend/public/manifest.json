@@ -2,14 +2,11 @@
   "short_name": "Mistrally",
   "name": "Mistrally - AI teaching assistant",
   "icons": [
-    {
-      "src": "mistrally.webp",
-      "type": "image/webp",
-      "sizes": "any"
-    }
+    { "src": "favicon.svg", "type": "image/svg+xml", "sizes": "any" },
+    { "src": "mistrally.webp", "type": "image/webp", "sizes": "500x500" }
   ],
-  "start_url": ".",
+  "start_url": "/chat",
   "display": "standalone",
-  "theme_color": "#111827",
-  "background_color": "#f9fafb"
+  "theme_color": "#09090b",
+  "background_color": "#09090b"
 }

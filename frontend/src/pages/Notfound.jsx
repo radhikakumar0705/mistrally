@@ -1,12 +1,16 @@
-// src/pages/NotFoundPage.jsx
 import { Link } from "react-router-dom";
+import GlowBackground from "../components/GlowBackground";
 
-const NotFound = () => (
-  <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-    <h1 className="text-5xl font-bold mb-4">404</h1>
-    <p className="text-lg mb-4">Page not found</p>
-    <Link to="/" className="text-blue-500">Go Home</Link>
-  </div>
-);
-
-export default NotFound;
+export default function NotFound() {
+  return (
+    <div className="relative flex min-h-dvh flex-col items-center justify-center px-4 text-center">
+      <GlowBackground />
+      <p className="text-gradient text-7xl font-bold tracking-tight">404</p>
+      <h1 className="mt-4 text-xl font-semibold text-white">Page not found</h1>
+      <p className="mt-2 text-zinc-400">The page you&apos;re looking for doesn&apos;t exist.</p>
+      <Link to="/" className="btn-primary mt-8">
+        Go home
+      </Link>
+    </div>
+  );
+}

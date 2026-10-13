@@ -1,7 +1,7 @@
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
 
-from extensions import db
+from extensions import db, limiter
 from models.user import User
 
 auth_bp = Blueprint('auth', __name__)
@@ -10,6 +10,7 @@ MIN_PASSWORD_LENGTH = 8
 
 
 @auth_bp.route('/register', methods=['POST'])
+@limiter.limit("5/minute")
 def register():
     data = request.get_json(silent=True) or {}
 
@@ -38,6 +39,7 @@ def register():
 
 
 @auth_bp.route('/login', methods=['POST'])
+@limiter.limit("10/minute")
 def login():
     data = request.get_json(silent=True) or {}
 

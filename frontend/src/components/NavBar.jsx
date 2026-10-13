@@ -1,46 +1,33 @@
-// src/components/NavBar.jsx
-import React, { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import Logo from "./Logo";
 
-const Navbar = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    setIsLoggedIn(!!token); // re-checked on every navigation, e.g. right after login
-  }, [location]);
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setIsLoggedIn(false);
-    navigate("/login");
-  };
+export default function NavBar() {
+  const { isLoggedIn } = useAuth();
 
   return (
-    <nav className="flex justify-between items-center bg-gray-900 text-white px-6 py-4">
-      <Link to="/" className="text-2xl font-bold text-purple-400">
-        Mistrally
-      </Link>
-
-      {isLoggedIn ? (
-        <button
-          onClick={handleLogout}
-          className="bg-red-500 px-4 py-2 rounded hover:bg-red-600 transition"
-        >
-          Logout
-        </button>
-      ) : (
-        <button
-          onClick={() => navigate("/login")}
-          className="bg-blue-500 px-4 py-2 rounded hover:bg-blue-600 transition"
-        >
-          Login
-        </button>
-      )}
-    </nav>
+    <header className="sticky top-0 z-20 border-b border-white/5 bg-zinc-950/70 backdrop-blur-xl">
+      <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+        <Link to="/" aria-label="Mistrally home">
+          <Logo />
+        </Link>
+        <div className="flex items-center gap-2">
+          {isLoggedIn ? (
+            <Link to="/chat" className="btn-primary">
+              Open chat
+            </Link>
+          ) : (
+            <>
+              <Link to="/login" className="btn-secondary border-transparent bg-transparent">
+                Log in
+              </Link>
+              <Link to="/signup" className="btn-primary">
+                Get started
+              </Link>
+            </>
+          )}
+        </div>
+      </nav>
+    </header>
   );
-};
-
-export default Navbar;
+}

@@ -1,0 +1,16 @@
+venv/
+**/__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
+chroma_db/
+data/
+uploaded_files/
+tests/
+.pytest_cache/
+.ruff_cache/
+*.db
+*.sqlite3
+Dockerfile
+.dockerignore

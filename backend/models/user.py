@@ -1,4 +1,5 @@
-from extensions import db, bcrypt
+from extensions import bcrypt, db
+
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)

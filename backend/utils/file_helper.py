@@ -39,7 +39,7 @@ def extract_text_from_pdf(file_path):
 
 def extract_text_from_txt(file_path):
     """Extract text from a TXT file."""
-    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+    with open(file_path, encoding="utf-8", errors="ignore") as f:
         return f.read().strip()
 
 

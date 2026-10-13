@@ -1,151 +1,96 @@
-// src/pages/Chat.jsx
-import { useState, useEffect, useRef } from "react";
-import Sidebar from "../components/SideBar";
-import ChatBubble from "../components/ChatBubble";
-import ChatInput from "../components/ChatInput";
-import { errorMessage } from "../api/axiosClient";
-import {
-  getSessionMessages,
-  sendMessage,
-  createSession,
-  deleteSession,
-  getChatSessions,
-  uploadDocument,
-} from "../api/chat";
+import { Menu } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import Composer from "../components/chat/Composer";
+import EmptyState from "../components/chat/EmptyState";
+import MessageList from "../components/chat/MessageList";
+import ModelPicker from "../components/chat/ModelPicker";
+import Sidebar from "../components/chat/Sidebar";
+import { useAuth } from "../context/AuthContext";
+import { useChat } from "../hooks/useChat";
+import { useDocuments } from "../hooks/useDocuments";
 
-const toBubbles = (history) =>
-  history.flatMap((h) => [
-    { sender: "user", text: h.user_message },
-    { sender: "bot", text: h.bot_response },
-  ]);
+export default function ChatPage() {
+  const chat = useChat();
+  const documents = useDocuments();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const { sessionId } = useParams();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-const ChatPage = () => {
-  const [messages, setMessages] = useState([]);
-  const [sessions, setSessions] = useState([]); // All chat sessions
-  const [currentSessionId, setCurrentSessionId] = useState(null); // Active session
-  const [waiting, setWaiting] = useState(false);
-  const bottomRef = useRef(null);
+  const { currentId, selectSession } = chat;
 
-  const addBubble = (sender, text) =>
-    setMessages((prev) => [...prev, { sender, text }]);
-
-  // Load messages of the selected session
-  const selectSession = async (sessionId) => {
-    setCurrentSessionId(sessionId);
-    setMessages([]);
-    try {
-      setMessages(toBubbles(await getSessionMessages(sessionId)));
-    } catch (err) {
-      console.error("Error loading session messages:", err);
-    }
-  };
-
-  // Create a new chat session and make it active
-  const startNewChat = async () => {
-    const session = await createSession();
-    setSessions((prev) => [session, ...prev]);
-    setCurrentSessionId(session.id);
-    return session.id;
-  };
-
-  const handleNewChat = async () => {
-    try {
-      await startNewChat();
-      setMessages([]);
-    } catch (err) {
-      console.error("Error creating session:", err);
-    }
-  };
-
-  const handleDelete = async (sessionId) => {
-    if (!window.confirm("Delete this chat?")) return;
-    try {
-      await deleteSession(sessionId);
-      setSessions((prev) => prev.filter((s) => s.id !== sessionId));
-      if (sessionId === currentSessionId) {
-        setCurrentSessionId(null);
-        setMessages([]);
-      }
-    } catch (err) {
-      console.error("Error deleting session:", err);
-    }
-  };
-
-  // Send message to current session, starting one if needed
-  const handleSend = async (msg) => {
-    addBubble("user", msg);
-    setWaiting(true);
-
-    try {
-      const sessionId = currentSessionId ?? (await startNewChat());
-      const res = await sendMessage(sessionId, msg);
-      addBubble("bot", res.response || "No reply");
-      // The first message titles the session
-      setSessions((prev) => prev.map((s) => (s.id === res.session.id ? res.session : s)));
-    } catch (error) {
-      console.error("Error sending message:", error);
-      addBubble("bot", `⚠️ ${errorMessage(error, "Failed to send message.")}`);
-    } finally {
-      setWaiting(false);
-    }
-  };
-
-  const handleUpload = async (file) => {
-    setWaiting(true);
-    try {
-      const res = await uploadDocument(file);
-      addBubble("bot", `📄 Added "${res.filename}" to your documents. Ask me about it!`);
-    } catch (error) {
-      addBubble("bot", `⚠️ ${errorMessage(error, "Upload failed.")}`);
-    } finally {
-      setWaiting(false);
-    }
-  };
-
-  // Initial load: list sessions and open the most recent one
+  // Keep the URL and the open chat in sync: /chat/42 opens chat 42, and back/forward work
   useEffect(() => {
-    (async () => {
-      try {
-        const data = await getChatSessions();
-        setSessions(data);
-        if (data.length > 0) selectSession(data[0].id);
-      } catch (err) {
-        console.error("Failed to load sessions:", err);
-      }
-    })();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    const fromUrl = sessionId ? Number(sessionId) : null;
+    if (fromUrl !== currentId) selectSession(fromUrl);
+    // only react to URL changes here; the effect below handles in-app changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
 
-  // Keep the newest message in view
+  const previousId = useRef(currentId);
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, waiting]);
+    if (previousId.current === currentId) return; // not on first render, or a deep link would be undone
+    previousId.current = currentId;
+    const target = currentId ? `/chat/${currentId}` : "/chat";
+    if (window.location.pathname !== target) navigate(target, { replace: !sessionId && Boolean(currentId) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentId]);
+
+  const title = chat.currentSession?.title || "New chat";
+  const isEmpty = chat.messages.length === 0 && !chat.loadingMessages;
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] rounded-lg overflow-hidden shadow">
+    <div className="flex h-dvh overflow-hidden bg-zinc-950">
       <Sidebar
-        sessions={sessions}
-        currentSessionId={currentSessionId}
-        onSelect={selectSession}
-        onNewChat={handleNewChat}
-        onDelete={handleDelete}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        sessions={chat.sessions}
+        sessionsLoaded={chat.sessionsLoaded}
+        currentId={chat.currentId}
+        onSelect={chat.selectSession}
+        onNewChat={chat.newChat}
+        onRename={chat.renameSession}
+        onDelete={chat.removeSession}
+        documents={documents}
+        user={user}
+        onLogout={logout}
       />
-      <div className="flex flex-col flex-1 bg-gray-50">
-        <div className="flex-1 overflow-y-auto p-4">
-          {messages.length === 0 && !waiting && (
-            <p className="text-center text-gray-400 mt-10">
-              Ask Mistrally anything, or attach a PDF/TXT with 📎 to chat about it.
-            </p>
-          )}
-          {messages.map((msg, idx) => (
-            <ChatBubble key={idx} sender={msg.sender} text={msg.text} />
-          ))}
-          {waiting && <ChatBubble sender="bot" text="Mistrally is thinking…" />}
-          <div ref={bottomRef} />
-        </div>
-        <ChatInput onSend={handleSend} onUpload={handleUpload} disabled={waiting} />
-      </div>
+
+      <main className="relative flex min-w-0 flex-1 flex-col">
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-violet-600/[0.07] to-transparent" />
+
+        <header className="relative z-10 flex h-16 shrink-0 items-center gap-3 border-b border-white/5 px-4 sm:px-6">
+          <button type="button" onClick={() => setSidebarOpen(true)} className="icon-btn md:hidden" aria-label="Open sidebar">
+            <Menu className="h-5 w-5" />
+          </button>
+          <h2 className="min-w-0 flex-1 truncate text-sm font-medium text-zinc-200">{title}</h2>
+          <ModelPicker
+            models={chat.models}
+            value={chat.activeModel}
+            onChange={chat.chooseModel}
+            disabled={chat.streaming}
+          />
+        </header>
+
+        {chat.loadingMessages ? (
+          <div className="flex flex-1 items-center justify-center">
+            <span className="h-6 w-6 animate-spin rounded-full border-2 border-violet-400 border-t-transparent" />
+          </div>
+        ) : isEmpty ? (
+          <EmptyState onPick={chat.send} documentCount={documents.documents.length} />
+        ) : (
+          <MessageList messages={chat.messages} streaming={chat.streaming} onRegenerate={chat.regenerate} />
+        )}
+
+        <Composer
+          onSend={chat.send}
+          onStop={chat.stop}
+          onUpload={documents.upload}
+          streaming={chat.streaming}
+          uploading={documents.uploading}
+        />
+      </main>
     </div>
   );
-};
-
-export default ChatPage;
+}

@@ -1,0 +1,122 @@
+# Mistrally: full stack in Docker.
+#   cp .env.example .env    (fill in the secrets)
+#   docker compose up --build
+#   open http://localhost:8090
+#
+# By default the backend uses the Ollama running on your machine (fastest; uses your GPU).
+# To run Ollama in a container too:  docker compose --profile ollama up --build
+# and set OLLAMA_URL=http://ollama:11434 in .env.
+
+name: mistrally
+
+x-backend-env: &backend-env
+  SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env}
+  JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in .env}
+  DB_HOST: mysql
+  DB_PORT: "3306"
+  DB_NAME: mistrally
+  DB_USER: mistrally
+  DB_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
+  CHROMA_HOST: chroma
+  CHROMA_PORT: "8000"
+  OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+  OLLAMA_MODEL: ${OLLAMA_MODEL:-mistral}
+  RATELIMIT_STORAGE_URI: redis://redis:6379/0
+  PROXY_FIX_HOPS: "1"
+  UPLOAD_FOLDER: /tmp/uploads
+  LOG_LEVEL: INFO
+
+services:
+  mysql:
+    image: mysql:8.0.40
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: mistrally
+      MYSQL_USER: mistrally
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  chroma:
+    image: chromadb/chroma:1.3.5
+    restart: unless-stopped
+    volumes:
+      - chroma-data:/data
+
+  redis:
+    image: redis:7.4.1-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # One-shot job: apply database migrations before the API starts
+  migrate:
+    build: ./backend
+    image: mistrally-backend:local
+    command: ["flask", "--app", "wsgi", "db", "upgrade"]
+    environment: *backend-env
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: "no"
+
+  backend:
+    image: mistrally-backend:local
+    restart: unless-stopped
+    environment:
+      <<: *backend-env
+      WEB_CONCURRENCY: "2"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      chroma:
+        condition: service_started
+
+  frontend:
+    build: ./frontend
+    image: mistrally-frontend:local
+    restart: unless-stopped
+    environment:
+      BACKEND_URL: http://backend:5000
+    ports:
+      - "127.0.0.1:${MISTRALLY_PORT:-8090}:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  ollama:
+    profiles: ["ollama"]
+    image: ollama/ollama:0.12.6
+    restart: unless-stopped
+    volumes:
+      - ollama-data:/root/.ollama
+
+  ollama-pull:
+    profiles: ["ollama"]
+    image: ollama/ollama:0.12.6
+    environment:
+      OLLAMA_HOST: ollama:11434
+    entrypoint: ["ollama", "pull", "${OLLAMA_MODEL:-mistral}"]
+    depends_on:
+      - ollama
+    restart: "no"
+
+volumes:
+  mysql-data:
+  chroma-data:
+  ollama-data:

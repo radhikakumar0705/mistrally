@@ -1,0 +1,14 @@
+# Optional: run Ollama inside the cluster instead of on the host machine.
+# Add "../../components/ollama" under `components:` in an overlay.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+resources:
+  - ollama.yaml
+
+patches:
+  - target: { kind: ConfigMap, name: backend-config }
+    patch: |-
+      - op: replace
+        path: /data/OLLAMA_URL
+        value: http://ollama:11434

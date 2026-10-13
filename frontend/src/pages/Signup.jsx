@@ -1,70 +1,97 @@
-
+import { Loader2, Lock, Mail, User } from "lucide-react";
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import auth from "../api/auth";
 import { errorMessage } from "../api/axiosClient";
+import AuthLayout from "../components/AuthLayout";
+import FormField from "../components/FormField";
+import { useAuth } from "../context/AuthContext";
 
-const Signup = () => {
+export default function Signup() {
   const [form, setForm] = useState({ username: "", email: "", password: "" });
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    setSubmitting(true);
     try {
       await auth.signup(form);
-      navigate("/login");
+      // Log straight in so new users land in the chat
+      const { data } = await auth.login({ username: form.username, password: form.password });
+      login(data.access_token, data.user);
+      navigate("/chat", { replace: true });
     } catch (err) {
       setError(errorMessage(err, "Signup failed. Try again."));
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex justify-center items-center bg-gray-50">
-      <form onSubmit={handleSubmit} className="bg-white p-8 shadow-lg rounded-lg w-80">
-        <h2 className="text-2xl font-semibold mb-6 text-center">Sign Up</h2>
-        {error && <p className="text-red-500 mb-4 text-sm">{error}</p>}
-
-        <input
-          type="text"
+    <AuthLayout
+      title="Create your account"
+      subtitle="Your chats and documents stay on your own server."
+      footer={
+        <>
+          Already have an account?{" "}
+          <Link to="/login" className="font-medium text-violet-300 hover:text-violet-200">
+            Log in
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error ? (
+          <p role="alert" className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+            {error}
+          </p>
+        ) : null}
+        <FormField
+          label="Username"
+          icon={User}
           name="username"
-          placeholder="Username"
-          className="w-full mb-3 px-3 py-2 border rounded"
+          autoComplete="username"
+          placeholder="yourname"
+          maxLength={50}
+          value={form.username}
           onChange={handleChange}
           required
+          autoFocus
         />
-        <input
+        <FormField
+          label="Email"
+          icon={Mail}
           type="email"
           name="email"
-          placeholder="Email"
-          className="w-full mb-3 px-3 py-2 border rounded"
+          autoComplete="email"
+          placeholder="you@example.com"
+          value={form.email}
           onChange={handleChange}
           required
         />
-        <input
+        <FormField
+          label="Password"
+          icon={Lock}
           type="password"
           name="password"
-          placeholder="Password (8+ characters)"
+          autoComplete="new-password"
+          placeholder="••••••••"
           minLength={8}
-          className="w-full mb-4 px-3 py-2 border rounded text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          hint="At least 8 characters."
+          value={form.password}
           onChange={handleChange}
           required
         />
-        <button
-          type="submit"
-          className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
-        >
-          Create Account
+        <button type="submit" disabled={submitting} className="btn-primary w-full py-3">
+          {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          {submitting ? "Creating account…" : "Create account"}
         </button>
-        <p className="text-sm mt-4 text-center">
-          Already have an account? <Link to="/login" className="text-blue-500">Login</Link>
-        </p>
       </form>
-    </div>
+    </AuthLayout>
   );
-};
-
-export default Signup;
+}
