@@ -26,14 +26,18 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: backend/requirements*.txt
-      - name: Cache embedding model
+      - name: Cache embedding and re-ranking models
         uses: actions/cache@v4
         with:
-          path: ~/.cache/chroma
-          key: chroma-onnx-all-MiniLM-L6-v2
+          path: |
+            ~/.cache/chroma
+            ~/.cache/flashrank
+          key: models-minilm-l6-flashrank-minilm-l12
       - run: pip install -r requirements-dev.txt
       - run: ruff check .
       - run: pytest -q
+      - name: Retrieval quality gate (docs/rag-evaluation.md)
+        run: python -m eval.run_retrieval --check
 
   frontend:
     name: Frontend (lint + tests + build)

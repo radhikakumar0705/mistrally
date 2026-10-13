@@ -8,7 +8,7 @@ describe("Message", () => {
     const content = "Use **slicing**:\n\n```python\nnums[::-1]\n```";
     render(
       <Message
-        message={{ id: "a1", role: "assistant", content, sources: ["notes.pdf"] }}
+        message={{ id: "a1", role: "assistant", content, sources: [{ document: "notes.pdf", page: 3 }, "old.txt"] }}
         isLast
         streaming={false}
         onRegenerate={() => {}}
@@ -17,7 +17,8 @@ describe("Message", () => {
     expect(screen.getByText("slicing").tagName).toBe("STRONG");
     expect(screen.getByText("python")).toBeInTheDocument();
     expect(screen.getByLabelText("Copy code")).toBeInTheDocument();
-    expect(screen.getByText("notes.pdf")).toBeInTheDocument();
+    expect(screen.getByText("notes.pdf · p. 3")).toBeInTheDocument();
+    expect(screen.getByText("old.txt")).toBeInTheDocument();
   });
 
   it("offers regenerate only on the last finished answer", async () => {

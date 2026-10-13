@@ -11,8 +11,9 @@ RUN npm run build
 # ---- Runtime stage: static files served by unprivileged nginx ----
 FROM nginxinc/nginx-unprivileged:1.27.3-alpine
 
-# Where nginx proxies /api; rendered into the config at container start
-ENV BACKEND_URL=http://backend:5000
+# Where nginx proxies /api (host:port); rendered into the config at container start
+ENV BACKEND_HOST=backend:5000 \
+    NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1
 
 COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html

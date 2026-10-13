@@ -72,11 +72,22 @@ class Config:
     CHROMA_HOST = os.getenv("CHROMA_HOST")
     CHROMA_PORT = int(os.getenv("CHROMA_PORT", "8000"))
     CHROMA_DB_PATH = os.getenv("CHROMA_DB_PATH", "./chroma_db")
+    # Retrieval: "hybrid" (embeddings + BM25 keywords) or "dense" (embeddings only), optionally re-ranked
+    RAG_MODE = os.getenv("RAG_MODE", "hybrid")
+    RAG_RERANK = _bool("RAG_RERANK", True)
     RAG_TOP_K = int(os.getenv("RAG_TOP_K", "4"))
-    # Squared L2 distance on normalized embeddings; 1.4 keeps chunks with cosine similarity >= 0.3
+    RAG_CANDIDATES = int(os.getenv("RAG_CANDIDATES", "20"))
+    RAG_RERANK_CANDIDATES = int(os.getenv("RAG_RERANK_CANDIDATES", "12"))
+    # Calibrated with eval/run_retrieval.py: unanswerable questions score <= 3e-5, correct passages >= 2.5e-4
+    RAG_MIN_RERANK_SCORE = float(os.getenv("RAG_MIN_RERANK_SCORE", "1e-4"))
+    RAG_RERANK_MODEL = os.getenv("RAG_RERANK_MODEL", "ms-marco-MiniLM-L-12-v2")
+    RAG_RERANK_CACHE_DIR = os.getenv("RAG_RERANK_CACHE_DIR", os.path.expanduser("~/.cache/flashrank"))
+    # Without re-ranking: squared L2 distance on normalized embeddings (1.4 = cosine >= 0.3) or a BM25 score
     RAG_MAX_DISTANCE = float(os.getenv("RAG_MAX_DISTANCE", "1.4"))
+    RAG_MIN_BM25_SCORE = float(os.getenv("RAG_MIN_BM25_SCORE", "3.0"))
 
-    UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", "./data/uploads")
+    # Redis URL for the background document queue; unset = process uploads inside the request
+    TASK_QUEUE_URL = os.getenv("TASK_QUEUE_URL")
     MAX_CONTENT_LENGTH = int(os.getenv("MAX_UPLOAD_MB", "10")) * 1024 * 1024
 
     RATELIMIT_ENABLED = _bool("RATELIMIT_ENABLED", True)

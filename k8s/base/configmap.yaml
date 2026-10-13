@@ -14,9 +14,9 @@ data:
   OLLAMA_URL: http://host.docker.internal:11434
   OLLAMA_MODEL: mistral
   RATELIMIT_STORAGE_URI: redis://redis:6379/0
+  TASK_QUEUE_URL: redis://redis:6379/1
   # ingress-nginx -> frontend nginx -> backend
   PROXY_FIX_HOPS: "2"
-  UPLOAD_FOLDER: /tmp/uploads
   LOG_LEVEL: INFO
   PUBLIC_URL: http://mistrally.localhost
   COOKIE_SECURE: "false"

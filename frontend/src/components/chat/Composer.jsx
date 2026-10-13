@@ -45,13 +45,13 @@ export default function Composer({ onSend, onStop, onUpload, streaming, uploadin
     <div className="bg-gradient-to-t from-zinc-950 via-zinc-950 to-transparent px-4 pb-4 pt-2 sm:px-6">
       <div className="mx-auto max-w-3xl">
         <div className="glass flex items-end gap-2 rounded-2xl p-2 shadow-2xl shadow-black/40 transition focus-within:border-violet-500/40 focus-within:ring-4 focus-within:ring-violet-500/10">
-          <input ref={fileRef} type="file" accept=".pdf,.txt" onChange={onFile} className="hidden" />
+          <input ref={fileRef} type="file" accept=".pdf,.txt,.md" onChange={onFile} className="hidden" />
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
             className="icon-btn h-10 w-10 rounded-xl"
-            title="Add a PDF or TXT document for Mistrally to use"
+            title="Add a PDF, TXT or Markdown document for Mistrally to use"
             aria-label="Upload document"
           >
             {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Paperclip className="h-5 w-5" />}

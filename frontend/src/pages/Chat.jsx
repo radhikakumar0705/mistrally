@@ -90,7 +90,7 @@ export default function ChatPage() {
             <span className="h-6 w-6 animate-spin rounded-full border-2 border-violet-400 border-t-transparent" />
           </div>
         ) : isEmpty ? (
-          <EmptyState onPick={chat.send} documentCount={documents.documents.length} />
+          <EmptyState onPick={chat.send} documentCount={documents.readyCount} />
         ) : (
           <MessageList messages={chat.messages} streaming={chat.streaming} onRegenerate={chat.regenerate} />
         )}

@@ -4,6 +4,16 @@ log_format json_access escape=json
   '"path":"$uri","status":$status,"bytes":$body_bytes_sent,"duration_s":$request_time,'
   '"upstream_s":"$upstream_response_time","client_ip":"$remote_addr","user_agent":"$http_user_agent"}';
 
+# Re-resolve the API's address while running, so a restarted backend container (new IP) keeps working.
+# NGINX_LOCAL_RESOLVERS is filled in from /etc/resolv.conf by the image's entrypoint (Docker or cluster DNS).
+resolver ${NGINX_LOCAL_RESOLVERS} valid=10s ipv6=off;
+
+upstream api {
+    zone api 64k;
+    server ${BACKEND_HOST} resolve;
+    keepalive 16;
+}
+
 server {
     listen 8080;
     server_name _;
@@ -34,7 +44,7 @@ server {
 
     # API: strip the /api prefix and pass through to Flask
     location /api/ {
-        proxy_pass ${BACKEND_URL}/;
+        proxy_pass http://api/;
         proxy_http_version 1.1;
         proxy_set_header Connection "";
         proxy_set_header Host $host;

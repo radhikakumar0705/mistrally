@@ -33,8 +33,8 @@ x-backend-env: &backend-env
   OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
   OLLAMA_MODEL: ${OLLAMA_MODEL:-mistral}
   RATELIMIT_STORAGE_URI: redis://redis:6379/0
+  TASK_QUEUE_URL: redis://redis:6379/1
   PROXY_FIX_HOPS: "1"
-  UPLOAD_FOLDER: /tmp/uploads
   LOG_LEVEL: INFO
   OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
 
@@ -65,7 +65,10 @@ services:
   redis:
     image: redis:7.4.1-alpine
     restart: unless-stopped
-    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    # Rate-limit counters (db 0) and the document queue (db 1); append-only so queued jobs survive restarts
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -99,12 +102,28 @@ services:
       chroma:
         condition: service_started
 
+  # Processes uploaded documents from the Redis queue
+  worker:
+    image: mistrally-backend:local
+    restart: unless-stopped
+    command: ["python", "worker.py"]
+    environment: *backend-env
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os, redis; redis.Redis.from_url(os.environ['TASK_QUEUE_URL']).ping()"]
+      interval: 30s
+      timeout: 5s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
   frontend:
     build: ./frontend
     image: mistrally-frontend:local
     restart: unless-stopped
     environment:
-      BACKEND_URL: http://backend:5000
+      BACKEND_HOST: backend:5000
     ports:
       - "127.0.0.1:${MISTRALLY_PORT:-8090}:8080"
     depends_on:
@@ -166,6 +185,7 @@ services:
 
 volumes:
   prometheus-data:
+  redis-data:
   mysql-data:
   chroma-data:
   ollama-data:

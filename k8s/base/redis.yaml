@@ -15,18 +15,19 @@ metadata:
   labels: { app.kubernetes.io/name: redis, app.kubernetes.io/part-of: mistrally }
 spec:
   replicas: 1
+  strategy: { type: Recreate }  # the volume can only be mounted by one pod
   selector:
     matchLabels: { app.kubernetes.io/name: redis }
   template:
     metadata:
       labels: { app.kubernetes.io/name: redis, app.kubernetes.io/part-of: mistrally }
     spec:
-      securityContext: { runAsNonRoot: true, runAsUser: 999 }
+      securityContext: { runAsNonRoot: true, runAsUser: 999, fsGroup: 999 }
       containers:
         - name: redis
           image: redis:7.4.1-alpine
-          # Only rate-limit counters live here, so no persistence is needed
-          args: ["redis-server", "--save", "", "--appendonly", "no"]
+          # Rate-limit counters (db 0) and the document queue (db 1); append-only so queued jobs survive restarts
+          args: ["redis-server", "--appendonly", "yes", "--dir", "/data"]
           ports:
             - { name: redis, containerPort: 6379 }
           readinessProbe:
@@ -34,4 +35,18 @@ spec:
             periodSeconds: 5
           resources:
             requests: { cpu: 25m, memory: 32Mi }
-            limits: { memory: 128Mi }
+            limits: { memory: 256Mi }
+          volumeMounts:
+            - { name: data, mountPath: /data }
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: redis-data }
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-data
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests: { storage: 1Gi }

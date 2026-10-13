@@ -20,7 +20,6 @@ def make_config(tmp_path, **overrides):
         SQLALCHEMY_ENGINE_OPTIONS = {}
         CHROMA_HOST = None
         CHROMA_DB_PATH = str(tmp_path / "chroma")
-        UPLOAD_FOLDER = str(tmp_path / "uploads")
         RATELIMIT_ENABLED = False
         OLLAMA_MODEL = "test-model"
         LLM_PROVIDER = "ollama"

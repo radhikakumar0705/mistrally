@@ -33,3 +33,8 @@ opentelemetry-exporter-otlp-proto-grpc==1.38.0
 opentelemetry-instrumentation-flask==0.59b0
 opentelemetry-instrumentation-requests==0.59b0
 opentelemetry-instrumentation-sqlalchemy==0.59b0
+
+# Background jobs and retrieval quality
+rq==2.0.0
+rank-bm25==0.2.2
+flashrank==0.2.9

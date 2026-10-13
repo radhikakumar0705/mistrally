@@ -46,4 +46,4 @@ spec:
     - from:
         - podSelector:
             matchExpressions:
-              - { key: app.kubernetes.io/name, operator: In, values: [backend, migrate] }
+              - { key: app.kubernetes.io/name, operator: In, values: [backend, migrate, worker] }

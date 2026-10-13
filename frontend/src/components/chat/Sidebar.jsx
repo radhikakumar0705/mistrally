@@ -1,4 +1,5 @@
 import {
+  AlertCircle,
   Check,
   ChevronDown,
   FileText,
@@ -134,7 +135,7 @@ function DocumentsPanel({ documents, uploading, onUpload, onRemove }) {
         <input
           ref={fileRef}
           type="file"
-          accept=".pdf,.txt"
+          accept=".pdf,.txt,.md"
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];
@@ -147,7 +148,7 @@ function DocumentsPanel({ documents, uploading, onUpload, onRemove }) {
           onClick={() => fileRef.current?.click()}
           disabled={uploading}
           className="icon-btn h-7 w-7"
-          title="Upload a PDF or TXT"
+          title="Upload a PDF, TXT or Markdown file"
           aria-label="Upload document"
         >
           {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
@@ -163,10 +164,33 @@ function DocumentsPanel({ documents, uploading, onUpload, onRemove }) {
           ) : (
             documents.map((doc) => (
               <li key={doc.id} className="group flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-zinc-300 hover:bg-white/5">
-                <FileText className="h-4 w-4 shrink-0 text-fuchsia-300" />
-                <span className="min-w-0 flex-1 truncate" title={doc.filename}>
-                  {doc.filename}
-                </span>
+                {doc.status === "failed" ? (
+                  <AlertCircle className="h-4 w-4 shrink-0 text-red-400" />
+                ) : doc.status === "ready" ? (
+                  <FileText className="h-4 w-4 shrink-0 text-fuchsia-300" />
+                ) : (
+                  <Loader2 className="h-4 w-4 shrink-0 animate-spin text-violet-300" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <span className="block truncate" title={doc.error || doc.filename}>
+                    {doc.filename}
+                  </span>
+                  {doc.status === "queued" || doc.status === "processing" ? (
+                    <div
+                      className="mt-1 h-1 overflow-hidden rounded-full bg-white/10"
+                      role="progressbar"
+                      aria-valuenow={doc.progress}
+                      aria-label={`Processing ${doc.filename}`}
+                    >
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all duration-500"
+                        style={{ width: `${Math.max(doc.progress, doc.status === "queued" ? 4 : 10)}%` }}
+                      />
+                    </div>
+                  ) : doc.status === "failed" ? (
+                    <span className="block truncate text-xs text-red-300">{doc.error || "Failed"}</span>
+                  ) : null}
+                </div>
                 <button
                   type="button"
                   onClick={() => onRemove(doc)}

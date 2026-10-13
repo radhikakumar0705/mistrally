@@ -7,7 +7,7 @@ from extensions import db, limiter, user_or_ip
 from models.chat_history import ChatHistory
 from models.chat_session import DEFAULT_TITLE, ChatSession
 from observability import LLM_STREAMS, RAG_CHUNKS_USED, RAG_RETRIEVAL_SECONDS, StreamMetrics
-from services import chroma_service, llm
+from services import llm, retrieval
 from services.prompts import build_messages
 
 chat_bp = Blueprint("chat", __name__)
@@ -156,6 +156,17 @@ def regenerate(session_id):
     return _stream_reply(session, user_id, last.user_message, history, replaces=last.id)
 
 
+def _sources(chunks):
+    """Distinct documents (and pages) an answer drew on, most relevant first."""
+    seen, sources = set(), []
+    for chunk in chunks:
+        key = (chunk["source"], chunk.get("page"))
+        if key not in seen:
+            seen.add(key)
+            sources.append({"document": chunk["source"], "page": chunk.get("page")})
+    return sources
+
+
 def _sse(event):
     return f"data: {json.dumps(event)}\n\n"
 
@@ -164,12 +175,12 @@ def _stream_reply(session, user_id, user_msg, history, replaces=None):
     # Document retrieval is best-effort: a vector store problem shouldn't block chatting.
     try:
         with RAG_RETRIEVAL_SECONDS.time():
-            chunks = chroma_service.retrieve(user_msg, user_id)
+            chunks = retrieval.retrieve(user_msg, user_id)
         RAG_CHUNKS_USED.observe(len(chunks))
     except Exception:
         current_app.logger.exception("Document retrieval failed")
         chunks = []
-    sources = sorted({c["source"] for c in chunks})
+    sources = _sources(chunks)
 
     messages = build_messages(history, chunks, user_msg)
     model = session.model or llm.default_model()

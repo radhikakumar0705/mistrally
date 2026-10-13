@@ -1,0 +1,53 @@
+{"question": "How can I get a copy of a list in the opposite order?", "document": "python-basics.md", "expect": "items[::-1]"}
+{"question": "Why is adding an element at the start of a Python list slow?", "document": "python-basics.md", "expect": "every element shifts"}
+{"question": "How do I avoid a KeyError when a key might be missing from a dict?", "document": "python-basics.md", "expect": "d.get(key, default)"}
+{"question": "Do Python dicts remember the order things were added?", "document": "python-basics.md", "expect": "insertion order"}
+{"question": "When should I use a normal loop instead of a comprehension?", "document": "python-basics.md", "expect": "nested comprehensions are hard to read"}
+{"question": "Which block runs no matter whether an error was raised?", "document": "python-basics.md", "expect": "always runs"}
+{"question": "Why shouldn't I write except with no exception type?", "document": "python-basics.md", "expect": "swallows KeyboardInterrupt"}
+{"question": "What command sets up an isolated environment for a project?", "document": "python-basics.md", "expect": "python -m venv .venv"}
+{"question": "How do I round a number to one decimal inside an f-string?", "document": "python-basics.md", "expect": ":.1f"}
+{"question": "I committed too early, how do I take back the last commit but keep my changes?", "document": "git-guide.md", "expect": "git reset --soft HEAD~1"}
+{"question": "What's the safe way to undo a commit that is already on a shared branch?", "document": "git-guide.md", "expect": "git revert"}
+{"question": "How do I make a new branch and move to it in one step?", "document": "git-guide.md", "expect": "git switch -c"}
+{"question": "Is it okay to rebase work that teammates have already pulled?", "document": "git-guide.md", "expect": "Never rebase commits"}
+{"question": "How do I temporarily put away uncommitted work and get it back later?", "document": "git-guide.md", "expect": "git stash pop"}
+{"question": "What do the <<<<<<< and >>>>>>> lines in my file mean?", "document": "git-guide.md", "expect": "conflict markers"}
+{"question": "Why don't my release tags show up on the remote?", "document": "git-guide.md", "expect": "git push --tags"}
+{"question": "Which join drops rows that have no match in the other table?", "document": "sql-joins.md", "expect": "inner join returns only the rows"}
+{"question": "How can I list customers who never ordered anything?", "document": "sql-joins.md", "expect": "never placed an order"}
+{"question": "Why do indexes make inserts slower?", "document": "sql-joins.md", "expect": "maintained on every write"}
+{"question": "What's the difference between WHERE and HAVING?", "document": "sql-joins.md", "expect": "Filter groups after aggregation with HAVING"}
+{"question": "What does ACID stand for?", "document": "sql-joins.md", "expect": "atomicity, consistency, isolation and durability"}
+{"question": "My ORM runs one query per item in a list, what is that called and how do I fix it?", "document": "sql-joins.md", "expect": "N+1 problem"}
+{"question": "Difference between a 401 and a 403 response?", "document": "http-apis.md", "expect": "403 Forbidden means"}
+{"question": "Which header tells a throttled client how long to wait?", "document": "http-apis.md", "expect": "Retry-After"}
+{"question": "Why would a payments API ask for an idempotency key?", "document": "http-apis.md", "expect": "do not charge a card twice"}
+{"question": "What is the OPTIONS request my browser sends before the real API call?", "document": "http-apis.md", "expect": "preflight OPTIONS request"}
+{"question": "Why is LIMIT/OFFSET paging a bad idea for big tables?", "document": "http-apis.md", "expect": "Cursor-based pagination"}
+{"question": "How does If-None-Match help save bandwidth?", "document": "http-apis.md", "expect": "304 Not Modified"}
+{"question": "What is the time complexity of binary search?", "document": "algorithms.md", "expect": "O(log n)"}
+{"question": "How are two keys that hash to the same bucket handled?", "document": "algorithms.md", "expect": "open addressing"}
+{"question": "When does quicksort become quadratic?", "document": "algorithms.md", "expect": "worst case is O(n^2)"}
+{"question": "What happens if my recursive function has no stopping condition?", "document": "algorithms.md", "expect": "RecursionError"}
+{"question": "Which traversal finds shortest paths in an unweighted graph?", "document": "algorithms.md", "expect": "Breadth-first search"}
+{"question": "How does memoization speed up Fibonacci?", "document": "algorithms.md", "expect": "linear-time algorithm"}
+{"question": "How much is the final exam worth?", "document": "course-handbook.md", "expect": "worth 40 percent"}
+{"question": "Can I still hand in my lab four days after the deadline?", "document": "course-handbook.md", "expect": "more than 3 days after the deadline"}
+{"question": "Where are office hours held?", "document": "course-handbook.md", "expect": "4B-217"}
+{"question": "What is Project KESTREL?", "document": "course-handbook.md", "expect": "weather dashboard in Go"}
+{"question": "What does LAB-E73 mean?", "document": "course-handbook.md", "expect": "disk quota is exceeded"}
+{"question": "Which account do I use on the lab computers?", "document": "course-handbook.md", "expect": "cs101-lab"}
+{"question": "Is copying code from Stack Overflow allowed without credit?", "document": "course-handbook.md", "expect": "without attribution"}
+{"question": "What is the capital of Australia?", "document": null}
+{"question": "What are the best pizza toppings?", "document": null}
+{"question": "How do I bake sourdough bread?", "document": null}
+{"question": "Who won the 2018 football World Cup?", "document": null}
+{"question": "How do I change the oil in my car?", "document": null}
+{"question": "What is quantum entanglement?", "document": null}
+{"question": "How do I grow tomatoes on a balcony?", "document": null}
+{"question": "Translate 'good morning' into French.", "document": null}
+{"question": "What's a good stretching routine for runners?", "document": null}
+{"question": "How many moons does Jupiter have?", "document": null}
+{"question": "Recommend a fantasy novel for teenagers.", "document": null}
+{"question": "How do I knit a scarf?", "document": null}

@@ -24,15 +24,20 @@ function Sources({ sources }) {
   return (
     <div className="mt-3 flex flex-wrap items-center gap-1.5">
       <span className="text-xs text-zinc-500">Sources</span>
-      {sources.map((source) => (
-        <span
-          key={source}
-          className="inline-flex items-center gap-1 rounded-full border border-violet-500/20 bg-violet-500/10 px-2.5 py-0.5 text-xs text-violet-200"
-        >
-          <FileText className="h-3 w-3" />
-          {source}
-        </span>
-      ))}
+      {sources.map((source) => {
+        // Older answers stored plain file names; newer ones store {document, page}
+        const { document, page } = typeof source === "string" ? { document: source } : source;
+        const label = page ? `${document} · p. ${page}` : document;
+        return (
+          <span
+            key={label}
+            className="inline-flex items-center gap-1 rounded-full border border-violet-500/20 bg-violet-500/10 px-2.5 py-0.5 text-xs text-violet-200"
+          >
+            <FileText className="h-3 w-3" />
+            {label}
+          </span>
+        );
+      })}
     </div>
   );
 }

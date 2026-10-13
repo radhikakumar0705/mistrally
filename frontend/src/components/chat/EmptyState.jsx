@@ -44,7 +44,7 @@ export default function EmptyState({ onPick, documentCount }) {
           Ask about code, concepts or errors.
           {documentCount > 0
             ? ` I'll also search your ${documentCount} uploaded document${documentCount === 1 ? "" : "s"}.`
-            : " Attach a PDF or TXT with the paperclip to chat about your own notes."}
+            : " Attach a PDF, TXT or Markdown file with the paperclip to chat about your own notes."}
         </p>
 
         <div className="mt-10 grid w-full gap-3 sm:grid-cols-2">
