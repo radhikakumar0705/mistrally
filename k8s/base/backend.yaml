@@ -49,6 +49,8 @@ spec:
               valueFrom: { secretKeyRef: { name: mistrally-secrets, key: GOOGLE_CLIENT_ID, optional: true } }
             - name: GOOGLE_CLIENT_SECRET
               valueFrom: { secretKeyRef: { name: mistrally-secrets, key: GOOGLE_CLIENT_SECRET, optional: true } }
+            - name: GROQ_API_KEY
+              valueFrom: { secretKeyRef: { name: mistrally-secrets, key: GROQ_API_KEY, optional: true } }
           startupProbe:
             httpGet: { path: /health/live, port: http }
             periodSeconds: 3

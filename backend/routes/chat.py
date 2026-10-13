@@ -6,7 +6,8 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 from extensions import db, limiter, user_or_ip
 from models.chat_history import ChatHistory
 from models.chat_session import DEFAULT_TITLE, ChatSession
-from services import chroma_service, ollama_service
+from services import chroma_service, llm
+from services.prompts import build_messages
 
 chat_bp = Blueprint("chat", __name__)
 
@@ -32,10 +33,11 @@ def _clean_model(value):
 @jwt_required()
 def list_models():
     try:
-        models = ollama_service.list_models()
-    except ollama_service.OllamaError as e:
+        models = llm.list_models()
+    except llm.LLMError as e:
         return jsonify({"error": str(e)}), 502
-    return jsonify({"models": models, "default": current_app.config["OLLAMA_MODEL"]}), 200
+    return jsonify({"models": models, "default": llm.default_model(),
+                    "provider": current_app.config["LLM_PROVIDER"]}), 200
 
 
 @chat_bp.route("/sessions", methods=["GET"])
@@ -166,12 +168,12 @@ def _stream_reply(session, user_id, user_msg, history, replaces=None):
         chunks = []
     sources = sorted({c["source"] for c in chunks})
 
-    messages = ollama_service.build_messages(history, chunks, user_msg)
-    model = session.model or current_app.config["OLLAMA_MODEL"]
+    messages = build_messages(history, chunks, user_msg)
+    model = session.model or llm.default_model()
     try:
-        pieces = ollama_service.stream_chat(messages, model)
-    except ollama_service.OllamaError as e:
-        current_app.logger.error("Ollama request failed: %s", e)
+        pieces = llm.stream_chat(messages, model)
+    except llm.LLMError as e:
+        current_app.logger.error("Model request failed: %s", e)
         return jsonify({"error": f"The AI model is unavailable: {e}"}), 502
 
     session_id = session.id
@@ -205,8 +207,8 @@ def _stream_reply(session, user_id, user_msg, history, replaces=None):
                 for piece in pieces:
                     reply.append(piece)
                     yield _sse({"type": "token", "content": piece})
-            except ollama_service.OllamaError as e:
-                current_app.logger.error("Ollama stream failed: %s", e)
+            except llm.LLMError as e:
+                current_app.logger.error("Model stream failed: %s", e)
                 yield _sse({"type": "error", "error": str(e)})
 
             text = "".join(reply).strip()

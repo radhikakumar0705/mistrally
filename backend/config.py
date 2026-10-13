@@ -54,6 +54,16 @@ class Config:
     # Number of reverse proxies in front of the app (nginx, ingress), so rate limits see the real client IP
     PROXY_FIX_HOPS = int(os.getenv("PROXY_FIX_HOPS", "0"))
 
+    # Which model backend to use: ollama (local), groq, openai (any OpenAI-compatible API) or fake
+    LLM_PROVIDER = os.getenv("LLM_PROVIDER", "ollama").lower()
+    LLM_MODEL = os.getenv("LLM_MODEL")  # overrides the provider's default model
+    # Comma-separated models offered in the picker for hosted providers (default: everything the API lists)
+    LLM_MODELS = [m.strip() for m in os.getenv("LLM_MODELS", "").split(",") if m.strip()] or None
+    GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+    FAKE_LLM_DELAY = float(os.getenv("FAKE_LLM_DELAY", "0.02"))
+
     OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434").rstrip("/")
     OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mistral")
     OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "120"))

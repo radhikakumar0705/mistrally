@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app import create_app  # noqa: E402
 from config import Config  # noqa: E402
 from extensions import db  # noqa: E402
-from services import ollama_service  # noqa: E402
+from services import llm  # noqa: E402
 
 
 def make_config(tmp_path, **overrides):
@@ -23,6 +23,7 @@ def make_config(tmp_path, **overrides):
         UPLOAD_FOLDER = str(tmp_path / "uploads")
         RATELIMIT_ENABLED = False
         OLLAMA_MODEL = "test-model"
+        LLM_PROVIDER = "ollama"
         JWT_REFRESH_COOKIE_PATH = "/auth/"
         GOOGLE_CLIENT_ID = None
         GOOGLE_CLIENT_SECRET = None
@@ -49,7 +50,7 @@ def client(app):
 
 
 class FakeOllama:
-    """Stands in for the Ollama service: records prompts and streams a canned reply."""
+    """Stands in for the model provider: records prompts and streams a canned reply."""
 
     def __init__(self):
         self.reply = ["Hello", " there", "!"]
@@ -60,13 +61,13 @@ class FakeOllama:
 
     def stream_chat(self, messages, model):
         if self.fail_to_start:
-            raise ollama_service.OllamaError(self.fail_to_start)
+            raise llm.LLMError(self.fail_to_start)
         self.calls.append({"messages": messages, "model": model})
 
         def pieces():
             for i, piece in enumerate(self.reply):
                 if self.fail_mid_stream and i == 1:
-                    raise ollama_service.OllamaError(self.fail_mid_stream)
+                    raise llm.LLMError(self.fail_mid_stream)
                 yield piece
 
         return pieces()
@@ -78,8 +79,8 @@ class FakeOllama:
 @pytest.fixture
 def ollama(monkeypatch):
     fake = FakeOllama()
-    monkeypatch.setattr(ollama_service, "stream_chat", fake.stream_chat)
-    monkeypatch.setattr(ollama_service, "list_models", fake.list_models)
+    monkeypatch.setattr(llm, "stream_chat", fake.stream_chat)
+    monkeypatch.setattr(llm, "list_models", fake.list_models)
     return fake
 
 

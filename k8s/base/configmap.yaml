@@ -10,6 +10,7 @@ data:
   CHROMA_HOST: chroma
   CHROMA_PORT: "8000"
   # Ollama on the host machine (Docker Desktop / kind); the "ollama" component points this in-cluster
+  LLM_PROVIDER: ollama
   OLLAMA_URL: http://host.docker.internal:11434
   OLLAMA_MODEL: mistral
   RATELIMIT_STORAGE_URI: redis://redis:6379/0

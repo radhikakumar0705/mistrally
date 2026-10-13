@@ -47,4 +47,4 @@ def test_sessions_ordered_by_latest_activity(client, auth, ollama):
 
 def test_list_models(client, auth, ollama):
     data = client.get("/chat/models", headers=auth).get_json()
-    assert data == {"models": ["mistral:latest", "llama3.2:latest"], "default": "test-model"}
+    assert data == {"models": ["mistral:latest", "llama3.2:latest"], "default": "test-model", "provider": "ollama"}

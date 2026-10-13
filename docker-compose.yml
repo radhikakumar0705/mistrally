@@ -23,6 +23,10 @@ x-backend-env: &backend-env
   DB_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
   CHROMA_HOST: chroma
   CHROMA_PORT: "8000"
+  LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
+  LLM_MODEL: ${LLM_MODEL:-}
+  LLM_MODELS: ${LLM_MODELS:-}
+  GROQ_API_KEY: ${GROQ_API_KEY:-}
   OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
   OLLAMA_MODEL: ${OLLAMA_MODEL:-mistral}
   RATELIMIT_STORAGE_URI: redis://redis:6379/0
