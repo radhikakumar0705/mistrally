@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import authApi from "../api/auth";
 import { endSession, logoutRequest, onAuthChange, refreshSession } from "../api/axiosClient";
 import { hasSessionHint, setSessionHint, setToken } from "../lib/authStorage";
+import { FeaturesContext } from "./FeaturesContext";
 
 const AuthContext = createContext(null);
 
@@ -9,7 +10,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   // "loading" until we know whether the refresh cookie still holds a session
   const [status, setStatus] = useState(hasSessionHint() ? "loading" : "anonymous");
-  const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [features, setFeatures] = useState({ google: false, sandbox: false });
 
   useEffect(() => {
     const unsubscribe = onAuthChange((event) => {
@@ -27,7 +28,7 @@ export function AuthProvider({ children }) {
     }
     authApi
       .config()
-      .then(({ data }) => setGoogleEnabled(Boolean(data.google)))
+      .then(({ data }) => setFeatures({ google: Boolean(data.google), sandbox: Boolean(data.sandbox) }))
       .catch(() => {});
 
     return unsubscribe;
@@ -54,14 +55,18 @@ export function AuthProvider({ children }) {
       user,
       status,
       isLoggedIn: status === "authenticated",
-      googleEnabled,
+      googleEnabled: features.google,
       login,
       logout,
       completeOAuth: refreshSession,
     }),
-    [user, status, googleEnabled, login, logout]
+    [user, status, features.google, login, logout]
   );
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      <FeaturesContext.Provider value={features}>{children}</FeaturesContext.Provider>
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

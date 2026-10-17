@@ -57,6 +57,18 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  sandbox:
+    name: Code sandbox limits
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t mistrally-sandbox:ci sandbox
+      - name: Run the limit checks with production restrictions
+        run: >
+          docker run --rm --network none --read-only --tmpfs /tmp:size=16m --cap-drop ALL
+          --security-opt no-new-privileges --memory 512m --pids-limit 64 --cpus 1
+          mistrally-sandbox:ci python smoke_test.py
+
   manifests:
     name: Compose + Kubernetes manifests
     runs-on: ubuntu-latest
@@ -73,14 +85,14 @@ jobs:
 
   images:
     name: Docker images
-    needs: [backend, frontend, manifests]
+    needs: [backend, frontend, sandbox, manifests]
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     strategy:
       matrix:
-        component: [backend, frontend]
+        component: [backend, frontend, sandbox]
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3

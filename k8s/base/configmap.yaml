@@ -15,6 +15,7 @@ data:
   OLLAMA_MODEL: mistral
   RATELIMIT_STORAGE_URI: redis://redis:6379/0
   TASK_QUEUE_URL: redis://redis:6379/1
+  SANDBOX_URL: http://sandbox:8080
   # ingress-nginx -> frontend nginx -> backend
   PROXY_FIX_HOPS: "2"
   LOG_LEVEL: INFO

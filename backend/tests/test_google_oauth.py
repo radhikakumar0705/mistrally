@@ -36,7 +36,7 @@ def google_app(tmp_path, monkeypatch):
 
 def test_config_and_redirect(google_app):
     client = google_app.test_client()
-    assert client.get("/auth/config").get_json() == {"google": True}
+    assert client.get("/auth/config").get_json() == {"google": True, "sandbox": False}
     response = client.get("/auth/google/login")
     assert response.status_code == 302
     assert "redirect_uri=http://localhost:5173/api/auth/google/callback" in response.location

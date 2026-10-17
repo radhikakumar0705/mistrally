@@ -94,5 +94,5 @@ def test_logout_without_session_still_succeeds(client):
 
 
 def test_auth_config_reports_google_disabled(client):
-    assert client.get("/auth/config").get_json() == {"google": False}
+    assert client.get("/auth/config").get_json() == {"google": False, "sandbox": False}
     assert client.get("/auth/google/login").status_code == 404

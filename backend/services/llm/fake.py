@@ -48,8 +48,10 @@ def _example_for(schema):
     if kind == "object":
         return {key: _example_for(sub) for key, sub in schema.get("properties", {}).items()}
     if kind == "array":
-        count = max(schema.get("minItems", 3), 1)
-        return [_example_for(schema.get("items", {})) for _ in range(count)]
+        count = max(schema.get("minItems", 0), min(3, schema.get("maxItems", 3)), 1)
+        items = [_example_for(schema.get("items", {})) for _ in range(count)]
+        # Distinct strings, so validators that reject duplicates (e.g. quiz options) pass
+        return [f"{item} {i + 1}" if isinstance(item, str) else item for i, item in enumerate(items)]
     if kind == "integer":
         return schema.get("minimum", 0)
     if kind == "boolean":

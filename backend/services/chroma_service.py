@@ -80,6 +80,15 @@ def dense_search(query, user_id, n_results):
     ]
 
 
+def document_text(doc_id):
+    """A document's chunks in order, joined (used as study material for quizzes and flashcards)."""
+    result = _collection().get(where={"doc_id": doc_id}, include=["documents", "metadatas"])
+    ordered = sorted(
+        zip(result["metadatas"], result["documents"], strict=False), key=lambda pair: pair[0].get("chunk", 0)
+    )
+    return "\n\n".join(text for _metadata, text in ordered)
+
+
 def user_chunks(user_id):
     """Every chunk the user owns, for keyword (BM25) search: (ids, texts, metadatas)."""
     result = _collection().get(where={"user_id": user_id}, include=["documents", "metadatas"])

@@ -55,6 +55,8 @@ spec:
               valueFrom: { secretKeyRef: { name: mistrally-secrets, key: GOOGLE_CLIENT_SECRET, optional: true } }
             - name: GROQ_API_KEY
               valueFrom: { secretKeyRef: { name: mistrally-secrets, key: GROQ_API_KEY, optional: true } }
+            - name: SANDBOX_TOKEN
+              valueFrom: { secretKeyRef: { name: mistrally-secrets, key: SANDBOX_TOKEN } }
           startupProbe:
             httpGet: { path: /health/live, port: http }
             periodSeconds: 3

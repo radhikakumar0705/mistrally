@@ -25,3 +25,6 @@ images:
   - name: mistrally-frontend
     newName: mistrally-frontend
     newTag: local
+  - name: mistrally-sandbox
+    newName: mistrally-sandbox
+    newTag: local

@@ -34,6 +34,8 @@ x-backend-env: &backend-env
   OLLAMA_MODEL: ${OLLAMA_MODEL:-mistral}
   RATELIMIT_STORAGE_URI: redis://redis:6379/0
   TASK_QUEUE_URL: redis://redis:6379/1
+  SANDBOX_URL: http://sandbox:8080
+  SANDBOX_TOKEN: ${SANDBOX_TOKEN:?Set SANDBOX_TOKEN in .env}
   PROXY_FIX_HOPS: "1"
   LOG_LEVEL: INFO
   OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
@@ -92,6 +94,7 @@ services:
     environment:
       <<: *backend-env
       WEB_CONCURRENCY: "2"
+    networks: [default, sandbox]
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -117,6 +120,24 @@ services:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
+
+  # Runs Python snippets for the "Run" button. Its network is internal: no internet, and the
+  # databases aren't on it, so code can only reach the API that called it.
+  sandbox:
+    build: ./sandbox
+    image: mistrally-sandbox:local
+    restart: unless-stopped
+    environment:
+      SANDBOX_TOKEN: ${SANDBOX_TOKEN:?Set SANDBOX_TOKEN in .env}
+    networks: [sandbox]
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 512m
+    cpus: 1
+    pids_limit: 64
 
   frontend:
     build: ./frontend
@@ -182,6 +203,11 @@ services:
       COLLECTOR_OTLP_ENABLED: "true"
     ports:
       - "127.0.0.1:16686:16686"
+
+networks:
+  default:
+  sandbox:
+    internal: true
 
 volumes:
   prometheus-data:

@@ -38,7 +38,7 @@ def _session_response(user, status=200):
 @auth_bp.route('/config', methods=['GET'])
 def auth_config():
     """Which sign-in methods the frontend should offer."""
-    return jsonify({"google": _google_enabled()}), 200
+    return jsonify({"google": _google_enabled(), "sandbox": bool(current_app.config.get("SANDBOX_URL"))}), 200
 
 
 @auth_bp.route('/register', methods=['POST'])

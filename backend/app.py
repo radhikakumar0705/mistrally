@@ -52,10 +52,12 @@ def create_app(config_object=Config):
     from routes.auth import auth_bp
     from routes.chat import chat_bp
     from routes.documents import documents_bp
+    from routes.study import study_bp
 
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(chat_bp, url_prefix="/chat")
     app.register_blueprint(documents_bp, url_prefix="/documents")
+    app.register_blueprint(study_bp, url_prefix="/study")
 
     @app.route("/")
     def home():

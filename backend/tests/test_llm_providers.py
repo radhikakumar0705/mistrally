@@ -139,8 +139,10 @@ def test_fake_provider_streams_markdown_and_builds_json():
     schema = {"type": "object", "properties": {"cards": {"type": "array", "minItems": 2, "items": {
         "type": "object", "properties": {"front": {"type": "string"}, "back": {"type": "string"}}}}}}
     assert provider.complete_json([], "fake-tutor", schema) == {
-        "cards": [{"front": "Example text", "back": "Example text"}] * 2
+        "cards": [{"front": "Example text", "back": "Example text"}] * 3
     }
+    options = {"type": "array", "minItems": 4, "items": {"type": "string"}}
+    assert provider.complete_json([], "fake-tutor", options) == [f"Example text {i}" for i in range(1, 5)]
 
 
 @pytest.mark.parametrize("name, cls, model", [

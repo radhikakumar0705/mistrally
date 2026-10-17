@@ -1,4 +1,4 @@
-import { Menu } from "lucide-react";
+import { GraduationCap, Menu } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -7,6 +7,7 @@ import EmptyState from "../components/chat/EmptyState";
 import MessageList from "../components/chat/MessageList";
 import ModelPicker from "../components/chat/ModelPicker";
 import Sidebar from "../components/chat/Sidebar";
+import StudyDialog from "../components/study/StudyDialog";
 import { useAuth } from "../context/AuthContext";
 import { useChat } from "../hooks/useChat";
 import { useDocuments } from "../hooks/useDocuments";
@@ -19,6 +20,7 @@ export default function ChatPage() {
   const navigate = useNavigate();
   const { sessionId } = useParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [studyOpen, setStudyOpen] = useState(false);
 
   const { currentId, selectSession } = chat;
 
@@ -77,6 +79,10 @@ export default function ChatPage() {
             <Menu className="h-5 w-5" />
           </button>
           <h2 className="min-w-0 flex-1 truncate text-sm font-medium text-zinc-200">{title}</h2>
+          <button type="button" onClick={() => setStudyOpen(true)} className="btn-secondary py-1.5" title="Quizzes and flashcards">
+            <GraduationCap className="h-4 w-4 text-violet-300" />
+            <span className="hidden sm:inline">Study</span>
+          </button>
           <ModelPicker
             models={chat.models}
             value={chat.activeModel}
@@ -103,6 +109,13 @@ export default function ChatPage() {
           uploading={documents.uploading}
         />
       </main>
+
+      <StudyDialog
+        open={studyOpen}
+        onClose={() => setStudyOpen(false)}
+        documents={documents.documents}
+        model={chat.activeModel}
+      />
     </div>
   );
 }

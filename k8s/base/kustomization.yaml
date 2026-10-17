@@ -15,6 +15,7 @@ resources:
   - migrate-job.yaml
   - backend.yaml
   - worker.yaml
+  - sandbox.yaml
   - frontend.yaml
   - ingress.yaml
   - network-policies.yaml

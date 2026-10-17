@@ -86,6 +86,10 @@ class Config:
     RAG_MAX_DISTANCE = float(os.getenv("RAG_MAX_DISTANCE", "1.4"))
     RAG_MIN_BM25_SCORE = float(os.getenv("RAG_MIN_BM25_SCORE", "3.0"))
 
+    # Isolated code runner service (see sandbox/); unset disables the "Run" button
+    SANDBOX_URL = os.getenv("SANDBOX_URL")
+    SANDBOX_TOKEN = os.getenv("SANDBOX_TOKEN", "")
+
     # Redis URL for the background document queue; unset = process uploads inside the request
     TASK_QUEUE_URL = os.getenv("TASK_QUEUE_URL")
     MAX_CONTENT_LENGTH = int(os.getenv("MAX_UPLOAD_MB", "10")) * 1024 * 1024
