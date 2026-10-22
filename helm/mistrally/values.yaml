@@ -1,0 +1,108 @@
+# Default values for the Mistrally chart. Override with -f my-values.yaml or --set key=value.
+
+images:
+  registry: ghcr.io/radhikakumar0705
+  tag: ""          # defaults to the chart's appVersion
+  pullPolicy: IfNotPresent
+  backend: mistrally-backend
+  frontend: mistrally-frontend
+  sandbox: mistrally-sandbox
+
+# DNS suffix of the cluster; nginx needs fully qualified service names
+clusterDomain: cluster.local
+
+# Public URL of the site: used for Google OAuth redirects and secure cookies
+publicUrl: http://mistrally.localhost
+
+llm:
+  provider: ollama          # ollama | groq | openai | fake
+  model: ""                 # default model for the provider
+  models: ""                # comma-separated list offered in the picker (hosted providers)
+  ollamaUrl: http://ollama:11434
+
+secrets:
+  # Use a Secret you manage (e.g. with External Secrets or Sealed Secrets) instead of the chart's.
+  # It must contain the keys listed below.
+  existingSecret: ""
+  # Left empty, these are generated on first install and kept across upgrades.
+  secretKey: ""
+  jwtSecretKey: ""
+  mysqlPassword: ""
+  mysqlRootPassword: ""
+  sandboxToken: ""
+  # Optional integrations
+  googleClientId: ""
+  googleClientSecret: ""
+  groqApiKey: ""
+
+backend:
+  replicas: 2
+  webConcurrency: 2
+  resources:
+    requests: { cpu: 100m, memory: 384Mi }
+    limits: { memory: 1Gi }
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+  extraEnv: {}              # extra environment variables, e.g. { RAG_RERANK: "false" }
+
+worker:
+  enabled: true
+  replicas: 1
+  resources:
+    requests: { cpu: 100m, memory: 512Mi }
+    limits: { memory: 1536Mi }
+
+frontend:
+  replicas: 2
+  resources:
+    requests: { cpu: 25m, memory: 32Mi }
+    limits: { memory: 128Mi }
+
+sandbox:
+  enabled: true
+  resources:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits: { cpu: "1", memory: 512Mi }
+
+mysql:
+  enabled: true             # false: use an external database (see externalDatabase)
+  image: mysql:8.0.40
+  storage: 5Gi
+  resources:
+    requests: { cpu: 100m, memory: 512Mi }
+    limits: { memory: 1Gi }
+
+externalDatabase:
+  host: ""
+  port: 3306
+  name: mistrally
+  user: mistrally           # password comes from secrets.mysqlPassword / the existing secret
+
+chroma:
+  image: chromadb/chroma:1.3.5
+  storage: 2Gi
+
+redis:
+  image: redis:7.4.1-alpine
+  storage: 1Gi
+
+ingress:
+  enabled: true
+  className: nginx
+  host: mistrally.localhost
+  annotations: {}           # extra ingress annotations
+  tls:
+    enabled: false
+    secretName: mistrally-tls
+    # cert-manager issuer that provisions the certificate, e.g. letsencrypt-prod or selfsigned
+    clusterIssuer: ""
+
+networkPolicies:
+  enabled: true
+
+monitoring:
+  # Create a Prometheus Operator ServiceMonitor for the API (requires the CRD)
+  serviceMonitor: false

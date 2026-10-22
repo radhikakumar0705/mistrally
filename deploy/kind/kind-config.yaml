@@ -1,0 +1,21 @@
+# One-node local cluster. The ingress controller runs on this node and is reachable from the
+# host on http://localhost:8088 and https://localhost:8443 (only on loopback).
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: mistrally
+nodes:
+  - role: control-plane
+    image: kindest/node:v1.31.0
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
+    extraPortMappings:
+      - containerPort: 80
+        hostPort: 8088
+        listenAddress: "127.0.0.1"
+      - containerPort: 443
+        hostPort: 8443
+        listenAddress: "127.0.0.1"

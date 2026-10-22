@@ -123,6 +123,38 @@ jobs:
           kubectl kustomize k8s/overlays/local > rendered.yaml
           docker run --rm -v "$PWD:/work" ghcr.io/yannh/kubeconform:v0.6.7 \
             -strict -summary -kubernetes-version 1.30.0 /work/rendered.yaml
+      - name: Lint and render the Helm chart
+        run: |
+          mkdir rendered
+          for values in values.yaml values-kind.yaml values-gke.yaml; do
+            helm lint helm/mistrally -f "helm/mistrally/$values"
+            helm template mistrally helm/mistrally -n mistrally -f "helm/mistrally/$values" > "rendered/$values"
+          done
+          cp deploy/cert-manager/*.yaml deploy/argocd/*.yaml rendered/
+      - name: Validate chart output, cert-manager and Argo CD resources
+        run: |
+          docker run --rm -v "$PWD/rendered:/work" ghcr.io/yannh/kubeconform:v0.6.7 \
+            -strict -summary -kubernetes-version 1.30.0 \
+            -schema-location default \
+            -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+            /work
+      - name: Check the kind setup script
+        run: shellcheck deploy/kind/setup.sh
+
+  terraform:
+    name: Terraform (GKE)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: deploy/terraform/gke
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+      - run: terraform fmt -check -diff
+      - run: terraform init -backend=false -input=false
+      - run: terraform validate
 
   images:
     name: Docker images

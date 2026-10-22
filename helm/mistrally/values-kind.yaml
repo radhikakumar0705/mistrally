@@ -1,0 +1,33 @@
+# Local cluster made with kind (deploy/kind/setup.sh): images built here and loaded with
+# `kind load docker-image`, the demo model so no LLM is needed, and HTTPS on localhost:8443
+# with a certificate from the cert-manager local CA (deploy/cert-manager/local-ca.yaml).
+images:
+  registry: ""
+  tag: local
+  pullPolicy: Never
+
+publicUrl: https://localhost:8443
+
+llm:
+  provider: fake
+
+backend:
+  replicas: 1
+  webConcurrency: 1
+  autoscaling:
+    enabled: false
+
+frontend:
+  replicas: 1
+
+mysql:
+  storage: 1Gi
+
+ingress:
+  host: localhost
+  annotations:
+    # kind maps 443 to 8443 on the host, so a redirect to https://localhost/ would miss
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  tls:
+    enabled: true
+    clusterIssuer: mistrally-ca

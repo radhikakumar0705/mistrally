@@ -1,0 +1,17 @@
+Mistrally {{ .Chart.AppVersion }} is installed in namespace {{ .Release.Namespace }}.
+{{- if .Values.ingress.enabled }}
+
+Open {{ .Values.publicUrl }} once the pods are ready:
+  kubectl -n {{ .Release.Namespace }} get pods -w
+{{- else }}
+
+Reach it with a port-forward:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/frontend 8080:80
+{{- end }}
+
+Migrations ran as the "migrate" hook Job:
+  kubectl -n {{ .Release.Namespace }} logs job/migrate
+{{- if not .Values.secrets.existingSecret }}
+
+Secrets were generated into "mistrally-secrets" and are kept across upgrades and uninstalls.
+{{- end }}

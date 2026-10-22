@@ -9,7 +9,8 @@ and others via **Ollama**) or hosted ones (**Groq**), answers questions about yo
 anywhere from a laptop to **Kubernetes**.
 
 **Stack:** React 18 · TypeScript · Vite · Tailwind CSS · Flask · SQLAlchemy/Alembic · MySQL · ChromaDB ·
-Redis/RQ · Ollama · Docker · Kubernetes (Kustomize) · Prometheus/Grafana/OpenTelemetry · GitHub Actions
+Redis/RQ · Ollama · Docker · Kubernetes (Helm, Kustomize, kind) · Argo CD · cert-manager · Terraform (GKE) ·
+Prometheus/Grafana/OpenTelemetry · GitHub Actions
 
 **Docs:** [Design document](docs/design.md) · [Retrieval evaluation](docs/rag-evaluation.md) ·
 [Performance](docs/performance.md) · [Security](SECURITY.md) ·
@@ -62,6 +63,7 @@ The full write-up, with flows, data model, security and trade-offs, is in [docs/
 | Performance | Load-tested with k6 at 20 concurrent users: **4.2 → 7.0 answers/s** and p95 time to first byte **3.83 s → 0.46 s** after profiling-driven fixes (75× faster embeddings, skipping retrieval when there's nothing to search, an nginx keep-alive race); 0 failures in 4,625 requests |
 | Security | Refresh-token rotation with reuse detection, CSRF double-submit, no auto-linking of Google accounts, sandbox with no network route |
 | Supply chain | Trivy image scans that fail CI on fixable HIGH/CRITICAL CVEs, SPDX SBOMs per image, CodeQL, Dependabot, gitleaks secret scanning, pre-commit hooks |
+| Delivery | Helm chart (generated secrets kept across upgrades, migrations as an upgrade hook, config-checksum rollouts) verified end to end on a kind cluster with ingress-nginx and HTTPS from a cert-manager CA; enforced NetworkPolicies; Argo CD GitOps; Terraform for a private GKE cluster with Dataplane V2 and Workload Identity |
 | Observability | Prometheus metrics (time to first token, generation speed, answer outcomes), Grafana dashboard, JSON logs with request IDs, OpenTelemetry traces |
 | Testing | 117 backend tests (unit, integration, contract, migrations), 22 frontend tests, 8 Playwright end-to-end tests against the Docker stack, a k6 load test, a retrieval quality gate, sandbox limit checks, and two changes built test-first (red commit, then green) |
 
@@ -82,7 +84,48 @@ docker compose up --build
 Open <http://localhost:8090>. Add `--profile monitoring` for Prometheus (:9090), Grafana (:3001) and Jaeger
 (:16686), or `--profile ollama` to run Ollama in a container.
 
-### Kubernetes
+### Kubernetes with Helm (local cluster)
+
+One script creates a [kind](https://kind.sigs.k8s.io) cluster with ingress-nginx and cert-manager, builds
+and loads the images, and installs the chart with the demo model:
+
+```bash
+deploy/kind/setup.sh            # then open https://localhost:8443
+deploy/kind/setup.sh --argocd   # or let Argo CD deploy it from GitHub (GitOps)
+```
+
+The chart in [helm/mistrally](helm/mistrally) generates its secrets on first install and keeps them across
+upgrades, runs database migrations as a hook before every upgrade, and rolls pods when their config
+changes. HTTPS comes from a private CA managed by cert-manager
+([local-ca.yaml](deploy/cert-manager/local-ca.yaml)); [letsencrypt.yaml](deploy/cert-manager/letsencrypt.yaml)
+has the issuers for a public domain.
+
+NetworkPolicies are enforced on kind: the frontend can't reach the databases, and the sandbox can't reach
+DNS, the internet or other pods. kind's network plugin doesn't police host-network destinations such as
+the Kubernetes API server, which the sandbox can therefore connect to. It has no service-account token, so
+it can't authenticate. GKE's Dataplane V2 closes that gap.
+
+### Google Kubernetes Engine
+
+[deploy/terraform/gke](deploy/terraform/gke) describes a production-style cluster:
+- private nodes with Cloud NAT
+- Dataplane V2, so NetworkPolicies are enforced
+- Workload Identity
+- a least-privilege node service account
+- Artifact Registry
+- a static ingress IP
+
+It is validated in CI (`fmt`, `validate`) but has not been applied: running it creates billable resources.
+
+```bash
+cd deploy/terraform/gke && cp terraform.tfvars.example terraform.tfvars   # set project_id
+terraform init && terraform apply
+helm upgrade --install mistrally helm/mistrally -n mistrally --create-namespace -f helm/mistrally/values-gke.yaml
+```
+
+### Kubernetes with Kustomize
+
+Plain manifests, if you'd rather not use Helm:
 
 ```bash
 docker compose build
@@ -134,7 +177,9 @@ frontend/
 sandbox/          isolated Python runner
 monitoring/       Prometheus, alert rules, Grafana dashboard
 loadtest/         k6 load test and retrieval profiler
+helm/mistrally/   Helm chart, values for kind and GKE
 k8s/              Kustomize base, overlays, optional Ollama component
+deploy/           kind cluster + setup script, cert-manager issuers, Argo CD app, Terraform for GKE
 docs/             design.md, rag-evaluation.md, performance.md
 .github/          CI, CodeQL, load-test workflow, Dependabot
 ```

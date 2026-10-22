@@ -1,0 +1,78 @@
+{{- if .Values.networkPolicies.enabled }}
+# Least-privilege traffic rules, enforced on clusters whose network plugin supports NetworkPolicy
+# (kind's default kindnet enforces them since v0.24).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  labels: {{- include "mistrally.labels" . | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress"]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: frontend-from-anywhere
+  labels: {{- include "mistrally.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels: {{- include "mistrally.component" (list . "frontend") | nindent 6 }}
+  policyTypes: ["Ingress"]
+  ingress:
+    - ports: [{ port: 8080 }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-from-frontend
+  labels: {{- include "mistrally.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels: {{- include "mistrally.component" (list . "backend") | nindent 6 }}
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels: {{- include "mistrally.component" (list . "frontend") | nindent 14 }}
+      ports: [{ port: 5000 }]
+    {{- if .Values.monitoring.serviceMonitor }}
+    - from:
+        - namespaceSelector: {}  # Prometheus scrapes /metrics from its own namespace
+      ports: [{ port: 5000 }]
+    {{- end }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: data-stores-from-backend
+  labels: {{- include "mistrally.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchExpressions:
+      - { key: app.kubernetes.io/name, operator: In, values: [mysql, chroma, redis] }
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - { key: app.kubernetes.io/name, operator: In, values: [backend, migrate, worker] }
+{{- if .Values.sandbox.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: sandbox-isolation
+  labels: {{- include "mistrally.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels: {{- include "mistrally.component" (list . "sandbox") | nindent 6 }}
+  policyTypes: ["Ingress", "Egress"]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels: {{- include "mistrally.component" (list . "backend") | nindent 14 }}
+      ports: [{ port: 8080 }]
+  egress: []  # no outbound connections at all: not the internet, not DNS, not other pods
+{{- end }}
+{{- end }}

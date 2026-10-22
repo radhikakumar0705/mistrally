@@ -31,6 +31,8 @@ spec:
     metadata:
       labels: { app.kubernetes.io/name: chroma, app.kubernetes.io/part-of: mistrally }
     spec:
+      # Chroma reads CHROMA_* variables as config; the injected CHROMA_PORT=tcp://... crashes it
+      enableServiceLinks: false
       containers:
         - name: chroma
           image: chromadb/chroma:1.3.5

@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  labels: {{- include "mistrally.labels" . | nindent 4 }}
+data:
+  {{- if .Values.mysql.enabled }}
+  DB_HOST: mysql
+  DB_PORT: "3306"
+  DB_NAME: mistrally
+  DB_USER: mistrally
+  {{- else }}
+  DB_HOST: {{ required "externalDatabase.host is required when mysql.enabled=false" .Values.externalDatabase.host | quote }}
+  DB_PORT: {{ .Values.externalDatabase.port | quote }}
+  DB_NAME: {{ .Values.externalDatabase.name | quote }}
+  DB_USER: {{ .Values.externalDatabase.user | quote }}
+  {{- end }}
+  CHROMA_HOST: chroma
+  CHROMA_PORT: "8000"
+  LLM_PROVIDER: {{ .Values.llm.provider | quote }}
+  LLM_MODEL: {{ .Values.llm.model | quote }}
+  LLM_MODELS: {{ .Values.llm.models | quote }}
+  OLLAMA_URL: {{ .Values.llm.ollamaUrl | quote }}
+  RATELIMIT_STORAGE_URI: redis://redis:6379/0
+  TASK_QUEUE_URL: redis://redis:6379/1
+  {{- if .Values.sandbox.enabled }}
+  SANDBOX_URL: http://sandbox:8080
+  {{- end }}
+  # ingress-nginx -> frontend nginx -> backend
+  PROXY_FIX_HOPS: "2"
+  PUBLIC_URL: {{ .Values.publicUrl | quote }}
+  COOKIE_SECURE: {{ hasPrefix "https://" .Values.publicUrl | quote }}
+  WEB_CONCURRENCY: {{ .Values.backend.webConcurrency | quote }}
+  LOG_LEVEL: INFO
+  {{- range $key, $value := .Values.backend.extraEnv }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}

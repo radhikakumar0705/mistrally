@@ -1,0 +1,26 @@
+# Production-style values for the GKE cluster in deploy/terraform/gke. Replace the placeholders
+# with the Terraform outputs and your domain, then:
+#   helm upgrade --install mistrally helm/mistrally -n mistrally --create-namespace \
+#     -f helm/mistrally/values-gke.yaml --set secrets.groqApiKey=$GROQ_API_KEY
+images:
+  registry: us-central1-docker.pkg.dev/my-gcp-project/mistrally  # terraform output image_registry
+  tag: ""  # the chart's appVersion; CI pushes images tagged with the release version
+
+publicUrl: https://mistrally.example.com
+
+llm:
+  provider: groq
+  model: llama-3.3-70b-versatile
+  models: llama-3.3-70b-versatile,llama-3.1-8b-instant
+
+backend:
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+
+ingress:
+  host: mistrally.example.com
+  tls:
+    enabled: true
+    clusterIssuer: letsencrypt-prod  # deploy/cert-manager/letsencrypt.yaml

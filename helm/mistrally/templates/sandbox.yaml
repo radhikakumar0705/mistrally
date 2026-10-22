@@ -1,0 +1,56 @@
+{{- if .Values.sandbox.enabled }}
+# Runs Python snippets for the "Run" button. Only the API may call it, and it may not open any
+# connection itself (see networkpolicies.yaml); the container is non-root, read-only and capped.
+apiVersion: v1
+kind: Service
+metadata:
+  name: sandbox
+  labels: {{- include "mistrally.labels" . | nindent 4 }}
+spec:
+  selector: {{- include "mistrally.component" (list . "sandbox") | nindent 4 }}
+  ports:
+    - { name: http, port: 8080, targetPort: http }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sandbox
+  labels: {{- include "mistrally.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {{- include "mistrally.component" (list . "sandbox") | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "mistrally.component" (list . "sandbox") | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false  # executed code gets no Kubernetes API credentials
+      enableServiceLinks: false            # nor environment variables describing other services
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10002
+        runAsGroup: 10002
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: sandbox
+          image: {{ include "mistrally.image" (list . "sandbox") }}
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
+          env:
+            - name: SANDBOX_TOKEN
+              valueFrom: { secretKeyRef: { name: {{ include "mistrally.secretName" . }}, key: SANDBOX_TOKEN } }
+          ports:
+            - { name: http, containerPort: 8080 }
+          readinessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 20
+          resources: {{- toYaml .Values.sandbox.resources | nindent 12 }}
+          securityContext: {{- include "mistrally.containerSecurity" . | nindent 12 }}
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: tmp
+          emptyDir: { medium: Memory, sizeLimit: 64Mi }
+{{- end }}
