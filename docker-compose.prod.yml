@@ -1,0 +1,29 @@
+# Live demo on a VM: Caddy in front with automatic HTTPS (Let's Encrypt), Groq for answers.
+# Set up by deploy/demo/setup-vm.sh, which runs:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+services:
+  caddy:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"  # HTTP/3
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?Set SITE_ADDRESS in .env, e.g. 203.0.113.10.sslip.io}
+    volumes:
+      - ./deploy/demo/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data      # certificates: keep them, Let's Encrypt rate-limits re-issuing
+      - caddy-config:/config
+    depends_on:
+      - frontend
+
+  backend:
+    environment:
+      # Caddy -> nginx -> API: trust two proxies for the client address (rate limits, logs)
+      PROXY_FIX_HOPS: "2"
+
+volumes:
+  caddy-data:
+  caddy-config:

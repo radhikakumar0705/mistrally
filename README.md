@@ -84,6 +84,33 @@ docker compose up --build
 Open <http://localhost:8090>. Add `--profile monitoring` for Prometheus (:9090), Grafana (:3001) and Jaeger
 (:16686), or `--profile ollama` to run Ollama in a container.
 
+### Share it publicly
+
+**From your machine, no account or domain needed.** A Cloudflare quick tunnel gives the running stack a
+public HTTPS link (`https://<random-words>.trycloudflare.com`). The link lasts while the stack runs:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.tunnel.yml up -d --build
+docker compose -f docker-compose.yml -f docker-compose.tunnel.yml logs tunnel | grep trycloudflare.com
+```
+
+**On a VM, always on.** Any Ubuntu VM with 2+ vCPUs and 4 GB RAM works, e.g. Oracle Cloud's free tier.
+Open ports 80 and 443 in the cloud firewall, then run this on the VM:
+
+```bash
+echo "GROQ_API_KEY=gsk_..." > ~/mistrally.secrets && chmod 600 ~/mistrally.secrets
+curl -fsSL https://raw.githubusercontent.com/radhikakumar0705/mistrally/master/deploy/demo/setup-vm.sh | bash
+```
+
+[setup-vm.sh](deploy/demo/setup-vm.sh) does the following:
+- installs Docker
+- generates the secrets
+- starts the stack behind [Caddy](deploy/demo/Caddyfile), which gets a Let's Encrypt certificate by itself
+- serves it at `https://<vm-ip>.sslip.io`; set `SITE_ADDRESS` to use your own domain instead
+
+After that, [deploy-demo.yml](.github/workflows/deploy-demo.yml) redeploys over SSH whenever CI passes on
+`master`, once the `DEMO_*` repository secrets are set.
+
 ### Kubernetes with Helm (local cluster)
 
 One script creates a [kind](https://kind.sigs.k8s.io) cluster with ingress-nginx and cert-manager, builds

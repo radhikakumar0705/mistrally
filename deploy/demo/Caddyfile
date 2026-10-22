@@ -1,0 +1,17 @@
+# Caddy obtains and renews the HTTPS certificate for SITE_ADDRESS by itself.
+# HTTP is redirected to HTTPS automatically.
+{$SITE_ADDRESS} {
+	reverse_proxy frontend:8080 {
+		flush_interval -1 # pass streamed answers through immediately
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}
