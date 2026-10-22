@@ -66,3 +66,10 @@ backend/data/
 
 # Kubernetes secrets (generated into a Secret by kustomize)
 k8s/overlays/local/secrets.env
+
+# Playwright
+/frontend/test-results/
+/frontend/playwright-report/
+
+# k6 output
+loadtest/summary.json

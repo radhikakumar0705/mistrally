@@ -202,8 +202,13 @@ chunks). The UI polls `GET /documents` while anything is pending.
    dropped, so questions the notes can't answer get no context instead of misleading context.
 
 Measured on a 53-question set: hit@1 rose from 71% (the original fixed-size chunks with embeddings only) to
-100%, with 100% no-answer accuracy. Retrieval takes about 430 ms on a laptop CPU. The set is small and the
+100%, with 100% no-answer accuracy. Retrieval takes about 120 ms on a laptop CPU. The set is small and the
 cutoff was tuned on it; see the caveats in [rag-evaluation.md](rag-evaluation.md).
+
+Embeddings are computed by `services/embeddings.py`, which uses the same MiniLM model files as Chroma but
+pads each batch only to its longest text and caps threads per inference. The vectors are identical and it
+is 75x faster (see [performance.md](performance.md)). Retrieval is also skipped entirely for users who have
+no documents.
 
 ### Authentication
 
@@ -260,6 +265,8 @@ cutoff was tuned on it; see the caveats in [rag-evaluation.md](rag-evaluation.md
 | Contract | Every response validated against `openapi.yaml` | `tests/test_openapi_contract.py` |
 | Migrations | Upgrading empty, legacy and older schemas | `tests/test_migrations.py` |
 | Quality gate | Retrieval hit rate and no-answer accuracy must not regress | `eval/run_retrieval.py --check` |
+| End-to-end | Real browser against the Docker stack: sign-up, streaming, Stop, uploads, citations, export, quiz, code runner, logout | `frontend/e2e/` (Playwright) |
+| Load | 20 concurrent users with and without documents, with latency thresholds | `loadtest/chat.js` (k6), [performance.md](performance.md) |
 | Security limits | The sandbox actually blocks loops, memory and fork bombs, network access | `sandbox/smoke_test.py` |
 | Frontend | Components, stream parsing, date grouping | Vitest + Testing Library |
 
@@ -285,7 +292,7 @@ check, API type drift detection, Kubernetes manifest validation, and image build
 | RQ on Redis | Celery | One queue and one job type; RQ is far less configuration. Celery adds routing, retries and beat scheduling we don't need yet. |
 | ChromaDB | pgvector, Qdrant | Simple to embed or run as a server; per-user filtering is enough. pgvector would drop a service if the database moved to Postgres. |
 | ONNX embeddings, no PyTorch | sentence-transformers | Same model at about a third of the image size (~0.9 GB vs 3 GB+), and fast enough on CPU. |
-| Hybrid search + re-ranker | Embeddings only | Measured gain in [rag-evaluation.md](rag-evaluation.md); costs about 230 ms per question. |
+| Hybrid search + re-ranker | Embeddings only | Measured gain in [rag-evaluation.md](rag-evaluation.md); costs about 110 ms per question. |
 | Hand-written OpenAPI spec + contract tests | Generated from code (flask-smorest) | Spec-first keeps the contract readable and reviewable; tests stop it drifting from the code. |
 | Refresh tokens in cookies | Long-lived tokens in `localStorage` | Shorter exposure window and revocation, at the cost of CSRF handling. |
 | Container sandbox | gVisor / Firecracker microVMs | Adequate for a learning app; a public multi-tenant service should use a stronger isolation boundary. |

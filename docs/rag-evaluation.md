@@ -12,14 +12,16 @@ Questions: 41 answerable, 12 unanswerable (corpus: 6 documents). k = 4.
 
 | Configuration | hit@1 | hit@k | MRR | No-answer accuracy | Latency |
 |---|---|---|---|---|---|
-| Baseline: fixed chunks + embeddings | 71% | 73% | 0.720 | 100% | 204 ms |
-| Structured chunks + embeddings | 98% | 98% | 0.976 | 100% | 195 ms |
-| Structured + hybrid (BM25 + embeddings, RRF) | 100% | 100% | 1.000 | 92% | 199 ms |
-| Structured + hybrid + TinyBERT-L2 re-ranker | 98% | 100% | 0.988 | 100% | 369 ms |
-| Structured + hybrid + MiniLM-L12 re-ranker (default) | 100% | 100% | 1.000 | 100% | 432 ms |
+| Baseline: fixed chunks + embeddings | 71% | 73% | 0.720 | 100% | 9 ms |
+| Structured chunks + embeddings | 98% | 98% | 0.976 | 100% | 10 ms |
+| Structured + hybrid (BM25 + embeddings, RRF) | 100% | 100% | 1.000 | 92% | 11 ms |
+| Structured + hybrid + TinyBERT-L2 re-ranker | 98% | 100% | 0.988 | 100% | 18 ms |
+| Structured + hybrid + MiniLM-L12 re-ranker (default) | 100% | 100% | 1.000 | 100% | 121 ms |
 
 Latency is the mean retrieval time per question on a laptop CPU (Windows, no GPU), including embedding the
-question, BM25 scoring and re-ranking 12 candidates.
+question, BM25 scoring and re-ranking 12 candidates. It was about 430 ms for the default configuration until
+profiling showed the stock embedding function padded every question to 256 tokens; see
+[performance.md](performance.md).
 
 ## What changed and why it helped
 
