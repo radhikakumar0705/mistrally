@@ -149,6 +149,45 @@ def test_model_outage_becomes_a_dependency_error(app):
     assert error.value.status == 502
 
 
+class CountingRetriever:
+    def __init__(self):
+        self.calls = 0
+
+    def retrieve(self, query, user_id):
+        self.calls += 1
+        return [{"text": "excerpt", "source": "notes.md", "page": None}]
+
+
+class FakeDocuments:
+    def __init__(self, ready_users=()):
+        self.ready_users = set(ready_users)
+
+    def has_ready(self, user_id):
+        return user_id in self.ready_users
+
+
+def test_retrieval_is_skipped_for_users_without_documents(app):
+    """Embedding the question and querying the vector store costs ~0.45 s; pointless with no documents."""
+    retriever = CountingRetriever()
+    with app.test_request_context():
+        service = ChatService(FakeSessions(), FakeMessages(), FakeModels(), retriever, documents=FakeDocuments())
+        session = service.create_session(user_id=1)
+        events = list(service.start_reply(1, session.id, "hello").events())
+    assert retriever.calls == 0
+    assert events[0]["sources"] == []
+
+
+def test_retrieval_runs_for_users_with_documents(app):
+    retriever = CountingRetriever()
+    with app.test_request_context():
+        service = ChatService(FakeSessions(), FakeMessages(), FakeModels(), retriever,
+                              documents=FakeDocuments(ready_users={1}))
+        session = service.create_session(user_id=1)
+        events = list(service.start_reply(1, session.id, "hello").events())
+    assert retriever.calls == 1
+    assert events[0]["sources"] == [{"document": "notes.md", "page": None}]
+
+
 # ---- AuthService ----
 
 class FakeUsers(FakeRepository):
