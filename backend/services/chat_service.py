@@ -8,7 +8,7 @@ from flask import current_app
 from models.chat_history import ChatHistory
 from models.chat_session import DEFAULT_TITLE, ChatSession
 from observability import LLM_STREAMS, RAG_CHUNKS_USED, RAG_RETRIEVAL_SECONDS, StreamMetrics
-from repositories import ChatSessionRepository, MessageRepository
+from repositories import ChatSessionRepository, DocumentRepository, MessageRepository
 from services import export, llm, retrieval
 from services.errors import DependencyUnavailable, InvalidInput, NotFound
 from services.prompts import build_messages
@@ -40,9 +40,10 @@ class ChatService:
     and `retriever` for document search.
     """
 
-    def __init__(self, sessions=None, messages=None, models=llm, retriever=retrieval):
+    def __init__(self, sessions=None, messages=None, models=llm, retriever=retrieval, documents=None):
         self.sessions = sessions or ChatSessionRepository()
         self.messages = messages or MessageRepository()
+        self.documents = documents or DocumentRepository()
         self.models = models
         self.retriever = retriever
 
@@ -122,10 +123,14 @@ class ChatService:
 
     def _start(self, session, user_id, text, history, replaces=None) -> "ReplyStream":
         # Document retrieval is best-effort: a vector store problem shouldn't block chatting.
+        # It is skipped for users with no documents, which saves embedding the question and a vector
+        # query (~0.45 s, and CPU that concurrent requests compete for).
+        chunks = []
         try:
-            with RAG_RETRIEVAL_SECONDS.time():
-                chunks = self.retriever.retrieve(text, user_id)
-            RAG_CHUNKS_USED.observe(len(chunks))
+            if self.documents.has_ready(user_id):
+                with RAG_RETRIEVAL_SECONDS.time():
+                    chunks = self.retriever.retrieve(text, user_id)
+                RAG_CHUNKS_USED.observe(len(chunks))
         except Exception:
             current_app.logger.exception("Document retrieval failed")
             chunks = []
