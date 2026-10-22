@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---- Build stage: compile the React app ----
-FROM node:22.11.0-alpine AS build
+FROM node:22.21.1-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
@@ -9,7 +9,12 @@ COPY . .
 RUN npm run build
 
 # ---- Runtime stage: static files served by unprivileged nginx ----
-FROM nginxinc/nginx-unprivileged:1.27.3-alpine
+FROM nginxinc/nginx-unprivileged:1.29.3-alpine
+
+# Apply Alpine security updates published since the base image was built (found by Trivy)
+USER root
+RUN apk upgrade --no-cache
+USER 101
 
 # Where nginx proxies /api (host:port); rendered into the config at container start
 ENV BACKEND_HOST=backend:5000 \

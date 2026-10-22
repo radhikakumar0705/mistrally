@@ -1,6 +1,7 @@
 # Mistrally
 
 [![CI](https://github.com/radhikakumar0705/mistrally/actions/workflows/ci.yml/badge.svg)](https://github.com/radhikakumar0705/mistrally/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/radhikakumar0705/mistrally/actions/workflows/codeql.yml/badge.svg)](https://github.com/radhikakumar0705/mistrally/actions/workflows/codeql.yml)
 
 A private AI teaching assistant for programmers. Mistrally streams answers from local LLMs (Mistral, Llama
 and others via **Ollama**) or hosted ones (**Groq**), answers questions about your own notes with
@@ -11,6 +12,7 @@ anywhere from a laptop to **Kubernetes**.
 Redis/RQ · Ollama · Docker · Kubernetes (Kustomize) · Prometheus/Grafana/OpenTelemetry · GitHub Actions
 
 **Docs:** [Design document](docs/design.md) · [Retrieval evaluation](docs/rag-evaluation.md) ·
+[Performance](docs/performance.md) · [Security](SECURITY.md) ·
 [OpenAPI spec](backend/openapi.yaml) (interactive at `/api/docs` when running)
 
 ---
@@ -57,9 +59,11 @@ The full write-up, with flows, data model, security and trade-offs, is in [docs/
 |---|---|
 | Retrieval | Structure-aware chunking, BM25 + embeddings with Reciprocal Rank Fusion, cross-encoder re-ranking; **hit@1 71% → 100%** on the evaluation set, gated in CI |
 | Contract | OpenAPI 3.1 spec; contract tests validate every response and streamed event; frontend types generated from the spec with drift detection |
+| Performance | Load-tested with k6 at 20 concurrent users: **4.2 → 7.0 answers/s** and p95 time to first byte **3.83 s → 0.46 s** after profiling-driven fixes (75× faster embeddings, skipping retrieval when there's nothing to search, an nginx keep-alive race); 0 failures in 4,625 requests |
 | Security | Refresh-token rotation with reuse detection, CSRF double-submit, no auto-linking of Google accounts, sandbox with no network route |
+| Supply chain | Trivy image scans that fail CI on fixable HIGH/CRITICAL CVEs, SPDX SBOMs per image, CodeQL, Dependabot, gitleaks secret scanning, pre-commit hooks |
 | Observability | Prometheus metrics (time to first token, generation speed, answer outcomes), Grafana dashboard, JSON logs with request IDs, OpenTelemetry traces |
-| Testing | 115 backend tests (unit, integration, contract, migrations), 22 frontend tests, retrieval quality gate, sandbox limit checks, a feature built test-first |
+| Testing | 117 backend tests (unit, integration, contract, migrations), 22 frontend tests, 8 Playwright end-to-end tests against the Docker stack, a k6 load test, a retrieval quality gate, sandbox limit checks, and two changes built test-first (red commit, then green) |
 
 ---
 
@@ -105,6 +109,15 @@ cd backend  && pytest && ruff check . && python -m eval.run_retrieval --check
 cd frontend && npm test && npm run lint && npm run typecheck
 ```
 
+End-to-end and load tests run against the Docker stack with a deterministic fake model:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.test.yml up -d --build
+cd frontend && npx playwright install chromium && npm run e2e
+docker run --rm -i --network mistrally_default -e BASE_URL=http://frontend:8080 \
+  -v "$PWD/loadtest:/scripts" grafana/k6:0.54.0 run /scripts/chat.js
+```
+
 ## Project structure
 
 ```
@@ -115,10 +128,13 @@ backend/
   repositories/   database access (Repository)
   models/  migrations/  tests/  eval/
   openapi.yaml    API contract
-frontend/src/
-  pages/  components/  hooks/  api/ (typed client + generated schema)  lib/
+frontend/
+  src/            pages/  components/  hooks/  api/ (typed client + generated schema)  lib/
+  e2e/            Playwright end-to-end tests
 sandbox/          isolated Python runner
 monitoring/       Prometheus, alert rules, Grafana dashboard
+loadtest/         k6 load test and retrieval profiler
 k8s/              Kustomize base, overlays, optional Ollama component
-docs/             design.md, rag-evaluation.md
+docs/             design.md, rag-evaluation.md, performance.md
+.github/          CI, CodeQL, load-test workflow, Dependabot
 ```

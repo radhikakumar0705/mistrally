@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---- Build stage: install dependencies into a virtualenv ----
-FROM python:3.12.7-slim-bookworm AS builder
+FROM python:3.12.12-slim-bookworm AS builder
 
 ENV PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
@@ -16,7 +16,7 @@ RUN /opt/venv/bin/python -c "from chromadb.utils.embedding_functions import Defa
  && /opt/venv/bin/python -c "from flashrank import Ranker; Ranker(model_name='ms-marco-MiniLM-L-12-v2', cache_dir='/root/.cache/flashrank')"
 
 # ---- Runtime stage: slim image, non-root user ----
-FROM python:3.12.7-slim-bookworm
+FROM python:3.12.12-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -26,6 +26,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     LOG_FORMAT=json \
     PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus
 
+# Apply Debian security updates published since the base image was built (found by Trivy)
+RUN apt-get update \
+ && apt-get upgrade -y --no-install-recommends \
+ && rm -rf /var/lib/apt/lists/*
 RUN useradd --create-home --uid 10001 app
 COPY --from=builder /opt/venv /opt/venv
 COPY --from=builder --chown=app:app /root/.cache/chroma /home/app/.cache/chroma

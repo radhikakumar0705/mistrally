@@ -151,11 +151,33 @@ jobs:
           tags: |
             type=sha,format=short
             type=ref,event=branch
-      - uses: docker/build-push-action@v6
+      - name: Build for scanning
+        uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.component }}
-          push: ${{ github.event_name == 'push' }}
+          load: true
+          tags: mistrally-${{ matrix.component }}:scan
+          cache-from: type=gha,scope=${{ matrix.component }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
+      - name: Vulnerability scan (fails on fixable HIGH/CRITICAL)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: mistrally-${{ matrix.component }}:scan
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+      - name: Software bill of materials (SPDX)
+        uses: anchore/sbom-action@v0
+        with:
+          image: mistrally-${{ matrix.component }}:scan
+          format: spdx-json
+          artifact-name: sbom-${{ matrix.component }}.spdx.json
+      - name: Push
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.component }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.component }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
