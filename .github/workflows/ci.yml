@@ -53,9 +53,13 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      - name: API types match openapi.yaml
+        run: |
+          npm run types:api
+          git diff --exit-code -- src/api/schema.d.ts || (echo "Run 'npm run types:api' and commit the result" && exit 1)
       - run: npm run lint
       - run: npm test
-      - run: npm run build
+      - run: npm run build  # includes tsc --noEmit (strict)
 
   sandbox:
     name: Code sandbox limits

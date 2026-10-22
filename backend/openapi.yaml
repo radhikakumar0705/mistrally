@@ -1,0 +1,721 @@
+openapi: 3.1.0
+info:
+  title: Mistrally API
+  version: 1.0.0
+  description: |
+    API for Mistrally, a private AI teaching assistant.
+
+    **Authentication:** `POST /auth/login` returns a short-lived access token (send it as
+    `Authorization: Bearer <token>`) and sets an httpOnly refresh-token cookie. When the access token
+    expires, `POST /auth/refresh` (with the `X-CSRF-TOKEN` header copied from the `csrf_refresh_token`
+    cookie) returns a new one and rotates the cookie.
+
+    **Streaming:** sending a message returns `text/event-stream`; each event's `data:` line is a JSON
+    `StreamEvent`.
+
+    The browser reaches the API under `/api` (nginx or the Vite dev server strip the prefix).
+servers:
+  - url: /api
+    description: Through the web app (nginx / Vite)
+  - url: /
+    description: Flask directly
+
+tags:
+  - name: auth
+  - name: chat
+  - name: documents
+  - name: study
+  - name: ops
+
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/config:
+    get:
+      tags: [auth]
+      summary: Optional features the frontend should offer
+      security: []
+      responses:
+        "200":
+          description: Feature flags
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FeatureConfig" }
+
+  /auth/register:
+    post:
+      tags: [auth]
+      summary: Create a password account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RegisterRequest" }
+      responses:
+        "201": { $ref: "#/components/responses/Message" }
+        "400": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Log in with username (or email) and password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LoginRequest" }
+      responses:
+        "200":
+          description: Access token; the refresh token is set as an httpOnly cookie
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Session" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+
+  /auth/refresh:
+    post:
+      tags: [auth]
+      summary: Exchange the refresh cookie for a new access token (rotates the cookie)
+      security:
+        - refreshCookie: []
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      responses:
+        "200":
+          description: New access token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Session" }
+        "401": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+
+  /auth/logout:
+    post:
+      tags: [auth]
+      summary: Revoke the refresh token and clear the cookies
+      security:
+        - {}
+        - refreshCookie: []
+      responses:
+        "200": { $ref: "#/components/responses/Message" }
+
+  /auth/profile:
+    get:
+      tags: [auth]
+      summary: The signed-in user
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /auth/google/login:
+    get:
+      tags: [auth]
+      summary: Start Google sign-in (browser navigation; redirects to Google)
+      security: []
+      parameters:
+        - name: intent
+          in: query
+          required: false
+          description: "`link` connects Google to the account identified by the refresh cookie"
+          schema: { type: string, enum: [link] }
+      responses:
+        "302": { description: "Redirect to Google, or back to the login page" }
+        "404": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+
+  /auth/google/callback:
+    get:
+      tags: [auth]
+      summary: Google redirects here; sets the refresh cookie and redirects into the app
+      security: []
+      responses:
+        "302": { description: "Redirect to /auth/callback, /chat or /login?error=..." }
+
+  /chat/models:
+    get:
+      tags: [chat]
+      summary: Models the configured provider offers
+      responses:
+        "200":
+          description: Models
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ModelList" }
+        "401": { $ref: "#/components/responses/Error" }
+        "502": { $ref: "#/components/responses/Error" }
+
+  /chat/sessions:
+    get:
+      tags: [chat]
+      summary: The user's conversations, most recently active first
+      responses:
+        "200":
+          description: Conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ChatSession" }
+        "401": { $ref: "#/components/responses/Error" }
+    post:
+      tags: [chat]
+      summary: Start a conversation
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SessionCreate" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChatSession" }
+        "401": { $ref: "#/components/responses/Error" }
+
+  /chat/sessions/{session_id}:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+    patch:
+      tags: [chat]
+      summary: Rename a conversation or change its model
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SessionUpdate" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChatSession" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+    delete:
+      tags: [chat]
+      summary: Delete a conversation and its messages
+      responses:
+        "204": { description: Deleted }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /chat/sessions/{session_id}/messages:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+    get:
+      tags: [chat]
+      summary: Conversation history
+      responses:
+        "200":
+          description: Messages, oldest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ChatMessage" }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+    post:
+      tags: [chat]
+      summary: Send a message and stream the answer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SendMessage" }
+      responses:
+        "200": { $ref: "#/components/responses/AnswerStream" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+        "502": { $ref: "#/components/responses/Error" }
+
+  /chat/sessions/{session_id}/regenerate:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+    post:
+      tags: [chat]
+      summary: Answer the last message again, replacing the previous answer
+      responses:
+        "200": { $ref: "#/components/responses/AnswerStream" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+        "502": { $ref: "#/components/responses/Error" }
+
+  /documents:
+    get:
+      tags: [documents]
+      summary: The user's documents, newest first
+      responses:
+        "200":
+          description: Documents
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Document" }
+        "401": { $ref: "#/components/responses/Error" }
+    post:
+      tags: [documents]
+      summary: Upload a PDF, TXT or Markdown file for retrieval
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        "201":
+          description: Processed immediately (no background queue configured)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Document" }
+        "202":
+          description: Queued for background processing; poll GET /documents/{doc_id}
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Document" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "413": { $ref: "#/components/responses/Error" }
+        "422":
+          description: The file could not be read
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - { $ref: "#/components/schemas/Document" }
+                  - { $ref: "#/components/schemas/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+        "503":
+          description: The processing queue is unavailable
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Document" }
+
+  /documents/{doc_id}:
+    parameters:
+      - $ref: "#/components/parameters/DocumentId"
+    get:
+      tags: [documents]
+      summary: One document and its processing status
+      responses:
+        "200":
+          description: Document
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Document" }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+    delete:
+      tags: [documents]
+      summary: Delete a document and its indexed chunks
+      responses:
+        "204": { description: Deleted }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Error" }
+
+  /study/quiz:
+    post:
+      tags: [study]
+      summary: Generate a multiple-choice quiz from a document or topic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StudyRequest" }
+      responses:
+        "200":
+          description: Quiz
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Quiz" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+        "502": { $ref: "#/components/responses/Error" }
+
+  /study/flashcards:
+    post:
+      tags: [study]
+      summary: Generate flashcards from a document or topic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StudyRequest" }
+      responses:
+        "200":
+          description: Flashcards
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FlashcardDeck" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+        "502": { $ref: "#/components/responses/Error" }
+
+  /study/run:
+    post:
+      tags: [study]
+      summary: Run a Python snippet in the isolated sandbox
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RunRequest" }
+      responses:
+        "200":
+          description: Program output
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RunResult" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+        "502": { $ref: "#/components/responses/Error" }
+
+  /health/live:
+    get:
+      tags: [ops]
+      summary: Liveness probe
+      security: []
+      responses:
+        "200":
+          description: The process is up
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
+
+  /health/ready:
+    get:
+      tags: [ops]
+      summary: Readiness probe (database reachable)
+      security: []
+      responses:
+        "200":
+          description: Ready
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
+        "503":
+          description: Not ready
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
+
+  /metrics:
+    get:
+      tags: [ops]
+      summary: Prometheus metrics (not exposed through nginx)
+      security: []
+      responses:
+        "200":
+          description: Prometheus text format
+          content:
+            text/plain:
+              schema: { type: string }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    refreshCookie:
+      type: apiKey
+      in: cookie
+      name: refresh_token_cookie
+
+  parameters:
+    SessionId:
+      name: session_id
+      in: path
+      required: true
+      schema: { type: integer }
+    DocumentId:
+      name: doc_id
+      in: path
+      required: true
+      schema: { type: string }
+    CsrfToken:
+      name: X-CSRF-TOKEN
+      in: header
+      required: true
+      description: Value of the csrf_refresh_token cookie (double-submit CSRF protection)
+      schema: { type: string }
+
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Message:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [message]
+            properties:
+              message: { type: string }
+    AnswerStream:
+      description: |
+        Server-sent events. Every `data:` line is a JSON StreamEvent: one `start`, then `token`s,
+        optionally an `error`, then `done` once the answer is saved.
+      content:
+        text/event-stream:
+          schema: { type: string }
+          x-event-schema: { $ref: "#/components/schemas/StreamEvent" }
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+
+    FeatureConfig:
+      type: object
+      required: [google, sandbox]
+      properties:
+        google: { type: boolean }
+        sandbox: { type: boolean }
+
+    RegisterRequest:
+      type: object
+      required: [username, email, password]
+      properties:
+        username: { type: string, maxLength: 50 }
+        email: { type: string }
+        password: { type: string, minLength: 8 }
+
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string, description: Username or email address }
+        password: { type: string }
+
+    User:
+      type: object
+      required: [id, username, email, name, avatar_url, has_password, google_linked]
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        email: { type: string }
+        name: { type: [string, "null"] }
+        avatar_url: { type: [string, "null"] }
+        has_password: { type: boolean }
+        google_linked: { type: boolean }
+
+    Session:
+      type: object
+      required: [access_token, user]
+      properties:
+        access_token: { type: string }
+        user: { $ref: "#/components/schemas/User" }
+
+    ModelList:
+      type: object
+      required: [models, default, provider]
+      properties:
+        models:
+          type: array
+          items: { type: string }
+        default: { type: string }
+        provider: { type: string, enum: [ollama, groq, openai, fake] }
+
+    ChatSession:
+      type: object
+      required: [id, title, model, created_at, updated_at]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        model: { type: [string, "null"], description: "null means the server's default model" }
+        created_at: { type: [string, "null"] }
+        updated_at: { type: [string, "null"] }
+
+    SessionCreate:
+      type: object
+      properties:
+        title: { type: string }
+        model: { type: [string, "null"] }
+
+    SessionUpdate:
+      type: object
+      properties:
+        title: { type: string }
+        model: { type: [string, "null"] }
+
+    Source:
+      type: object
+      required: [document, page]
+      properties:
+        document: { type: string }
+        page: { type: [integer, "null"] }
+
+    ChatMessage:
+      type: object
+      required: [id, session_id, user_message, bot_response, sources, timestamp]
+      properties:
+        id: { type: integer }
+        session_id: { type: integer }
+        user_message: { type: string }
+        bot_response: { type: string }
+        sources:
+          type: array
+          items:
+            oneOf:
+              - { $ref: "#/components/schemas/Source" }
+              - { type: string, description: File name (answers saved by older versions) }
+        timestamp: { type: [string, "null"] }
+
+    SendMessage:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string, maxLength: 8000 }
+
+    StreamEvent:
+      oneOf:
+        - type: object
+          required: [type, sources, model]
+          properties:
+            type: { const: start }
+            sources:
+              type: array
+              items: { $ref: "#/components/schemas/Source" }
+            model: { type: string }
+        - type: object
+          required: [type, content]
+          properties:
+            type: { const: token }
+            content: { type: string }
+        - type: object
+          required: [type, error]
+          properties:
+            type: { const: error }
+            error: { type: string }
+        - type: object
+          required: [type, message, session]
+          properties:
+            type: { const: done }
+            message: { $ref: "#/components/schemas/ChatMessage" }
+            session: { $ref: "#/components/schemas/ChatSession" }
+
+    Document:
+      type: object
+      required: [id, filename, file_type, size_bytes, status, progress, pages, chunks, error, uploaded_at]
+      properties:
+        id: { type: string }
+        filename: { type: string }
+        file_type: { type: string, enum: [pdf, txt, md] }
+        size_bytes: { type: integer }
+        status: { type: string, enum: [queued, processing, ready, failed] }
+        progress: { type: integer, minimum: 0, maximum: 100 }
+        pages: { type: [integer, "null"] }
+        chunks: { type: integer }
+        error: { type: [string, "null"] }
+        uploaded_at: { type: [string, "null"] }
+
+    StudyRequest:
+      type: object
+      properties:
+        topic: { type: string, maxLength: 200 }
+        document_id: { type: string }
+        count: { type: integer, minimum: 1, maximum: 20, default: 5 }
+        difficulty: { type: string, enum: [easy, medium, hard], default: medium }
+        model: { type: [string, "null"] }
+
+    QuizQuestion:
+      type: object
+      required: [question, options, answer_index, explanation]
+      properties:
+        question: { type: string }
+        options:
+          type: array
+          minItems: 4
+          maxItems: 4
+          items: { type: string }
+        answer_index: { type: integer, minimum: 0, maximum: 3 }
+        explanation: { type: string }
+
+    Quiz:
+      type: object
+      required: [kind, source, title, questions]
+      properties:
+        kind: { const: quiz }
+        source: { type: string }
+        title: { type: string }
+        questions:
+          type: array
+          items: { $ref: "#/components/schemas/QuizQuestion" }
+
+    Flashcard:
+      type: object
+      required: [front, back]
+      properties:
+        front: { type: string }
+        back: { type: string }
+
+    FlashcardDeck:
+      type: object
+      required: [kind, source, title, cards]
+      properties:
+        kind: { const: flashcards }
+        source: { type: string }
+        title: { type: string }
+        cards:
+          type: array
+          items: { $ref: "#/components/schemas/Flashcard" }
+
+    RunRequest:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string, maxLength: 20000 }
+        stdin: { type: string, maxLength: 10000 }
+        language: { type: string, enum: [python], default: python }
+
+    RunResult:
+      type: object
+      required: [stdout, stderr, exit_code, timed_out]
+      properties:
+        stdout: { type: string }
+        stderr: { type: string }
+        exit_code: { type: [integer, "null"] }
+        timed_out: { type: boolean }
+        duration_ms: { type: integer }
+
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string }
+        database: { type: string }

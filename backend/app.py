@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_file
 from flask_cors import CORS
 from sqlalchemy import text
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -9,7 +9,25 @@ import observability
 from config import Config
 from extensions import bcrypt, db, jwt, limiter, migrate, oauth
 
-MIGRATIONS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "migrations")
+HERE = os.path.dirname(os.path.abspath(__file__))
+MIGRATIONS_DIR = os.path.join(HERE, "migrations")
+OPENAPI_SPEC = os.path.join(HERE, "openapi.yaml")
+
+# Interactive API docs; the spec URL is relative so it works both directly and under /api
+SWAGGER_UI_HTML = """<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Mistrally API</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/swagger-ui.css">
+</head>
+<body>
+  <div id="swagger"></div>
+  <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/swagger-ui-bundle.js"></script>
+  <script>SwaggerUIBundle({ url: "openapi.yaml", dom_id: "#swagger" });</script>
+</body>
+</html>
+"""
 
 
 def create_app(config_object=Config):
@@ -61,7 +79,17 @@ def create_app(config_object=Config):
 
     @app.route("/")
     def home():
-        return jsonify({"message": "Mistrally backend running"}), 200
+        return jsonify({"message": "Mistrally backend running", "docs": "/docs"}), 200
+
+    @app.route("/openapi.yaml")
+    @limiter.exempt
+    def openapi_spec():
+        return send_file(OPENAPI_SPEC, mimetype="application/yaml")
+
+    @app.route("/docs")
+    @limiter.exempt
+    def api_docs():
+        return SWAGGER_UI_HTML, 200, {"Content-Type": "text/html; charset=utf-8"}
 
     @app.route("/health/live")
     @limiter.exempt

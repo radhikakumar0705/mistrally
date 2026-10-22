@@ -15,14 +15,12 @@ def _current_user_id():
     return int(get_jwt_identity())
 
 
-@study_bp.route("/<kind>", methods=["POST"])
+@study_bp.route("/quiz", methods=["POST"], defaults={"kind": "quiz"})
+@study_bp.route("/flashcards", methods=["POST"], defaults={"kind": "flashcards"})
 @jwt_required()
 @limiter.limit("10/minute", key_func=user_or_ip)
 def generate(kind):
     """Generate a quiz or flashcards from one of the user's documents or from a topic."""
-    if kind not in study.KINDS:
-        return jsonify({"error": "Unknown study material type"}), 404
-
     data = request.get_json(silent=True) or {}
     try:
         count = int(data.get("count", 5))
