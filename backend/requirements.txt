@@ -22,7 +22,7 @@ numpy==1.26.4
 pypdf==6.19.0
 
 # Shared rate-limit storage across workers/replicas (RATELIMIT_STORAGE_URI=redis://...)
-redis==5.2.0
+redis==8.1.0
 Authlib==1.6.9
 
 # Observability
