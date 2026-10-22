@@ -12,6 +12,8 @@ upstream api {
     zone api 64k;
     server ${BACKEND_HOST} resolve;
     keepalive 16;
+    # Must be shorter than gunicorn's keepalive (5 s), or nginx can reuse a connection the API is closing
+    keepalive_timeout 4s;
 }
 
 server {
