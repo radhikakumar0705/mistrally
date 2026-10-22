@@ -107,8 +107,11 @@ export function useChat() {
   }, [selectSession]);
 
   const runStream = useCallback(
-    async (assistantId: string, start: (options: StreamOptions) => Promise<void>) => {
-      const controller = new AbortController();
+    async (
+      assistantId: string,
+      start: (options: StreamOptions) => Promise<void>,
+      controller: AbortController = new AbortController()
+    ) => {
       abortRef.current = controller;
       const patch = (update: (m: UiMessage) => Partial<UiMessage>) =>
         setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, ...update(m) } : m)));
@@ -156,6 +159,10 @@ export function useChat() {
       streamingRef.current = true;
       setStreaming(true);
 
+      // Created up front so Stop also works while a new chat is still being created
+      const controller = new AbortController();
+      abortRef.current = controller;
+
       const assistantId = localId();
       setMessages((prev) => [
         ...prev,
@@ -184,8 +191,17 @@ export function useChat() {
         }
       }
 
+      if (controller.signal.aborted) {
+        // Stopped before the answer started: nothing was generated or saved
+        setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, pending: false, stopped: true } : m)));
+        abortRef.current = null;
+        streamingRef.current = false;
+        setStreaming(false);
+        return;
+      }
+
       const id = sessionId;
-      await runStream(assistantId, (options) => streamMessage(id, text, options));
+      await runStream(assistantId, (options) => streamMessage(id, text, options), controller);
     },
     [draftModel, bumpSession, runStream]
   );
