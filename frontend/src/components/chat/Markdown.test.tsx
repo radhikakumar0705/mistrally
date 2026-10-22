@@ -32,6 +32,15 @@ describe("Markdown code blocks", () => {
     expect(screen.getByText(/Exit code 0/)).toBeInTheDocument();
   });
 
+  it("disables Run until the answer has finished streaming", () => {
+    render(
+      <FeaturesContext.Provider value={{ google: false, sandbox: true }}>
+        <Markdown content={python} streaming />
+      </FeaturesContext.Provider>
+    );
+    expect(screen.getByLabelText("Run code")).toBeDisabled();
+  });
+
   it("only offers Run for Python", () => {
     render(
       <FeaturesContext.Provider value={{ google: false, sandbox: true }}>

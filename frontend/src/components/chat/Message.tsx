@@ -74,7 +74,7 @@ function Message({ message, isLast = false, streaming = false, onRegenerate }: P
         {message.pending && !message.content ? <TypingDots /> : null}
         {message.content ? (
           <div className="relative">
-            <Markdown content={message.content} />
+            <Markdown content={message.content} streaming={Boolean(message.pending)} />
             {isStreaming ? (
               <span className="ml-0.5 inline-block h-4 w-2 translate-y-0.5 animate-blink rounded-sm bg-violet-400" />
             ) : null}

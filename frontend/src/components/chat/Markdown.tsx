@@ -1,6 +1,6 @@
 import "highlight.js/styles/github-dark.css";
 import { Loader2, Play, X } from "lucide-react";
-import { Children, isValidElement, memo, useRef, useState, type ReactNode } from "react";
+import { Children, createContext, isValidElement, memo, useContext, useRef, useState, type ReactNode } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import remarkGfm from "remark-gfm";
@@ -12,6 +12,9 @@ import { useFeatures } from "../../context/FeaturesContext";
 import CopyButton from "./CopyButton";
 
 const RUNNABLE = new Set(["python", "py", "python3"]);
+
+// True while the answer containing this Markdown is still streaming, so code blocks may be incomplete
+const StreamingContext = createContext(false);
 
 type RunOutcome = RunResult | { error: string };
 
@@ -52,6 +55,7 @@ function codeLanguage(children: ReactNode): string | undefined {
 function CodeBlock({ children }: { children?: ReactNode }) {
   const preRef = useRef<HTMLPreElement>(null);
   const { sandbox } = useFeatures();
+  const streaming = useContext(StreamingContext);
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<RunOutcome | null>(null);
   const language = codeLanguage(children);
@@ -78,7 +82,8 @@ function CodeBlock({ children }: { children?: ReactNode }) {
             <button
               type="button"
               onClick={run}
-              disabled={running}
+              disabled={running || streaming}
+              title={streaming ? "Wait for the answer to finish" : "Run in the sandbox"}
               className="inline-flex h-7 items-center gap-1.5 rounded-lg px-2 text-xs font-medium text-emerald-300 transition hover:bg-emerald-500/10 disabled:opacity-60"
               aria-label="Run code"
             >
@@ -110,14 +115,16 @@ const components: Components = {
 const rehypePlugins: PluggableList = [[rehypeHighlight, { detect: true }]];
 const remarkPlugins: PluggableList = [remarkGfm];
 
-function Markdown({ content }: { content: string }) {
+function Markdown({ content, streaming = false }: { content: string; streaming?: boolean }) {
   return (
     <div
       className="prose prose-invert max-w-none prose-p:leading-relaxed prose-pre:my-0 prose-code:rounded-md prose-code:bg-white/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-[0.85em] prose-code:font-normal prose-code:text-fuchsia-200 prose-a:text-violet-300 prose-strong:text-white prose-headings:text-white prose-li:marker:text-zinc-500"
     >
-      <ReactMarkdown remarkPlugins={remarkPlugins} rehypePlugins={rehypePlugins} components={components}>
-        {content}
-      </ReactMarkdown>
+      <StreamingContext.Provider value={streaming}>
+        <ReactMarkdown remarkPlugins={remarkPlugins} rehypePlugins={rehypePlugins} components={components}>
+          {content}
+        </ReactMarkdown>
+      </StreamingContext.Provider>
     </div>
   );
 }
