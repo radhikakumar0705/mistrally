@@ -41,7 +41,7 @@ def describe_http_error(error, service):
             if message:
                 return message
         except ValueError:
-            pass
+            pass  # not JSON: fall back to the generic messages below
     if isinstance(error, requests.exceptions.ConnectionError):
         return f"Could not connect to {service}. Is it running?"
     return str(error)

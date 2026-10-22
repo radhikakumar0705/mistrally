@@ -4,7 +4,7 @@ let counter = 0;
 
 /** Sign up a brand-new user through the UI and land in the chat. */
 export async function signUp(page: Page): Promise<string> {
-  const username = `e2e${Date.now()}${++counter}${Math.floor(Math.random() * 1000)}`;
+  const username = `e2e${++counter}${crypto.randomUUID().replaceAll("-", "").slice(0, 12)}`;
   await page.goto("/signup");
   await page.getByPlaceholder("yourname").fill(username);
   await page.getByPlaceholder("you@example.com").fill(`${username}@example.test`);

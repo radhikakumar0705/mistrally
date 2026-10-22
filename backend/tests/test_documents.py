@@ -35,9 +35,11 @@ def test_upload_is_processed_inline_without_a_queue(client, auth):
 
 def test_delete_removes_record_and_chunks(client, auth, ollama):
     document = upload(client, auth).get_json()
-    assert client.delete(f"/documents/{document['id']}", headers=auth).status_code == 204
+    deleted = client.delete(f"/documents/{document['id']}", headers=auth)
+    assert deleted.status_code == 204
     assert client.get("/documents", headers=auth).get_json() == []
-    assert client.delete(f"/documents/{document['id']}", headers=auth).status_code == 404
+    deleted_again = client.delete(f"/documents/{document['id']}", headers=auth)
+    assert deleted_again.status_code == 404
     assert ask(client, auth, "What is the secret project codename?")[0]["sources"] == []
 
 
@@ -90,7 +92,8 @@ def test_documents_are_private(client, auth, ollama):
 
     assert client.get("/documents", headers=bob).get_json() == []
     assert client.get(f"/documents/{document['id']}", headers=bob).status_code == 404
-    assert client.delete(f"/documents/{document['id']}", headers=bob).status_code == 404
+    foreign_delete = client.delete(f"/documents/{document['id']}", headers=bob)
+    assert foreign_delete.status_code == 404
 
     events = ask(client, bob, "What is the secret project codename?")
     assert events[0]["sources"] == []

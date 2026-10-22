@@ -202,7 +202,7 @@ def init_app(app):
             "request",
             extra={
                 "method": request.method,
-                "path": request.path,
+                "path": request.path.replace("\r", "").replace("\n", ""),  # no forged log lines
                 "endpoint": endpoint,
                 "status": response.status_code,
                 "duration_ms": round(elapsed * 1000, 1),

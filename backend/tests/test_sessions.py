@@ -17,7 +17,8 @@ def test_session_lifecycle(client, auth):
     assert client.patch(f"/chat/sessions/{session['id']}", headers=auth, json={"title": "  "}).status_code == 400
 
     assert [s["id"] for s in client.get("/chat/sessions", headers=auth).get_json()] == [session["id"]]
-    assert client.delete(f"/chat/sessions/{session['id']}", headers=auth).status_code == 204
+    deleted = client.delete(f"/chat/sessions/{session['id']}", headers=auth)
+    assert deleted.status_code == 204
     assert client.get("/chat/sessions", headers=auth).get_json() == []
 
 
