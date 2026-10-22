@@ -76,6 +76,8 @@ class Config:
     RAG_MODE = os.getenv("RAG_MODE", "hybrid")
     RAG_RERANK = _bool("RAG_RERANK", True)
     RAG_TOP_K = int(os.getenv("RAG_TOP_K", "4"))
+    # Threads per embedding inference; small values keep concurrent requests from oversubscribing the CPU
+    EMBEDDING_THREADS = int(os.getenv("EMBEDDING_THREADS", "2"))
     RAG_CANDIDATES = int(os.getenv("RAG_CANDIDATES", "20"))
     RAG_RERANK_CANDIDATES = int(os.getenv("RAG_RERANK_CANDIDATES", "12"))
     # Calibrated with eval/run_retrieval.py: unanswerable questions score <= 3e-5, correct passages >= 2.5e-4

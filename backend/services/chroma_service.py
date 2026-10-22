@@ -5,12 +5,15 @@ import chromadb
 from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
 from flask import current_app
 
+from services.embeddings import embedder
+
 COLLECTION_NAME = "mistrally_docs"
 
 
 @lru_cache(maxsize=1)
 def _embedding_function():
-    # all-MiniLM-L6-v2 run with ONNX Runtime: same model as sentence-transformers, no PyTorch needed
+    # Registered on the collection so its stored configuration stays compatible; never called, because
+    # add_chunks and dense_search always pass embeddings computed by services.embeddings
     return DefaultEmbeddingFunction()
 
 
@@ -26,6 +29,11 @@ def _collection_for(host, port, path):
 def _collection():
     config = current_app.config
     return _collection_for(config["CHROMA_HOST"], config["CHROMA_PORT"], config["CHROMA_DB_PATH"])
+
+
+def embed(texts):
+    """Embeddings are computed here (fast, see services/embeddings.py) and passed to Chroma explicitly."""
+    return embedder(current_app.config["EMBEDDING_THREADS"])(texts)
 
 
 def add_chunks(document, chunks, start_index=0):
@@ -44,9 +52,11 @@ def add_chunks(document, chunks, start_index=0):
             metadata["section"] = chunk["section"][:200]
         metadatas.append(metadata)
 
+    texts = [c["text"] for c in chunks]
     _collection().add(
         ids=[f"{document.id}-{start_index + i}" for i in range(len(chunks))],
-        documents=[c["text"] for c in chunks],
+        documents=texts,
+        embeddings=embed(texts),
         metadatas=metadatas,
     )
 
@@ -66,7 +76,7 @@ def dense_search(query, user_id, n_results):
     if collection.count() == 0:
         return []
     results = collection.query(
-        query_texts=[query],
+        query_embeddings=embed([query]),
         n_results=n_results,
         where={"user_id": user_id},
         include=["documents", "metadatas", "distances"],
