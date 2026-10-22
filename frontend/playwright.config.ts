@@ -7,8 +7,11 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./e2e",
   timeout: 60_000,
-  expect: { timeout: 15_000 },
+  // Generous because the browsers and the whole stack often share one machine (laptop or CI runner)
+  expect: { timeout: 30_000 },
   fullyParallel: true,
+  // Each worker is a full browser; too many starve the stack of CPU when both share one machine
+  workers: process.env.CI ? 2 : 4,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
   use: {
