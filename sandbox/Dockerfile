@@ -1,5 +1,5 @@
 # Minimal image for running untrusted Python snippets: no compilers, no extra packages, non-root.
-FROM python:3.12.12-slim-bookworm
+FROM python:3.14.7-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
