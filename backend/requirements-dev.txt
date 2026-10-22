@@ -1,5 +1,5 @@
 -r requirements.txt
-pytest==8.3.3
+pytest==9.1.1
 ruff==0.6.9
 fakeredis==2.26.1
 openapi-core==0.19.4
