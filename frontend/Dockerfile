@@ -9,7 +9,7 @@ COPY . .
 RUN npm run build
 
 # ---- Runtime stage: static files served by unprivileged nginx ----
-FROM nginxinc/nginx-unprivileged:1.29.3-alpine
+FROM nginxinc/nginx-unprivileged:1.31.7-alpine
 
 # Apply Alpine security updates published since the base image was built (found by Trivy)
 USER root
