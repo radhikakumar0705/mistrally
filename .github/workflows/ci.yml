@@ -27,7 +27,7 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements*.txt
       - name: Cache embedding and re-ranking models
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cache/chroma
