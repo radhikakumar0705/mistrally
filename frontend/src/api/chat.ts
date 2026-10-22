@@ -17,6 +17,12 @@ export const getSessionMessages = async (sessionId: number) =>
 
 export const getModels = async () => (await axiosClient.get<ModelList>("/chat/models")).data;
 
+/** Download a conversation as Markdown; returns the file and the name the server suggests. */
+export const exportSession = async (sessionId: number) => {
+  const response = await axiosClient.get<Blob>(`/chat/sessions/${sessionId}/export`, { responseType: "blob" });
+  return { blob: response.data, disposition: response.headers["content-disposition"] as string | undefined };
+};
+
 export interface StreamOptions {
   signal: AbortSignal;
   onEvent: (event: StreamEvent) => void;

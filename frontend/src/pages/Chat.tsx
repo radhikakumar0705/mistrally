@@ -1,7 +1,9 @@
-import { GraduationCap, Menu } from "lucide-react";
+import { Download, GraduationCap, Menu } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { errorMessage } from "../api/axiosClient";
+import { exportSession } from "../api/chat";
 import Composer from "../components/chat/Composer";
 import EmptyState from "../components/chat/EmptyState";
 import MessageList from "../components/chat/MessageList";
@@ -11,6 +13,7 @@ import StudyDialog from "../components/study/StudyDialog";
 import { useAuth } from "../context/AuthContext";
 import { useChat } from "../hooks/useChat";
 import { useDocuments } from "../hooks/useDocuments";
+import { filenameFromDisposition, saveBlob } from "../lib/download";
 
 export default function ChatPage() {
   const chat = useChat();
@@ -23,6 +26,16 @@ export default function ChatPage() {
   const [studyOpen, setStudyOpen] = useState(false);
 
   const { currentId, selectSession } = chat;
+
+  const exportChat = async () => {
+    if (currentId == null) return;
+    try {
+      const { blob, disposition } = await exportSession(currentId);
+      saveBlob(blob, filenameFromDisposition(disposition, "conversation.md"));
+    } catch (error) {
+      toast.error(errorMessage(error, "Could not export this chat"));
+    }
+  };
 
   // Result of "Connect Google" (the backend redirects back here)
   useEffect(() => {
@@ -79,6 +92,11 @@ export default function ChatPage() {
             <Menu className="h-5 w-5" />
           </button>
           <h2 className="min-w-0 flex-1 truncate text-sm font-medium text-zinc-200">{title}</h2>
+          {currentId != null ? (
+            <button type="button" onClick={exportChat} className="icon-btn" title="Export as Markdown" aria-label="Export chat">
+              <Download className="h-4 w-4" />
+            </button>
+          ) : null}
           <button type="button" onClick={() => setStudyOpen(true)} className="btn-secondary py-1.5" title="Quizzes and flashcards">
             <GraduationCap className="h-4 w-4 text-violet-300" />
             <span className="hidden sm:inline">Study</span>

@@ -25,20 +25,35 @@ OPENAPI = OpenAPI.from_file_path(str(SPEC_PATH))
 STREAM_EVENT = Draft202012Validator({"$ref": "#/components/schemas/StreamEvent", "components": SPEC["components"]})
 
 UNDOCUMENTED = {"/", "/docs", "/openapi.yaml", "/static/<path:filename>"}
+# openapi-core can only parse JSON and plain-text bodies; these are checked separately
+RAW_BODY_TYPES = {"text/event-stream", "text/markdown"}
 
 
 def check(response):
     """Validate a test-client response (and the request that produced it) against the spec."""
     request = WerkzeugOpenAPIRequest(response.request)
-    if response.mimetype != "text/event-stream":
+    if response.mimetype not in RAW_BODY_TYPES:
         OPENAPI.validate_response(request, WerkzeugOpenAPIResponse(response))
-    else:
-        # openapi-core can't parse event streams, so each event is validated against StreamEvent instead
+        return response
+    _assert_documented(response)
+    if response.mimetype == "text/event-stream":
+        # each streamed event is validated against the StreamEvent schema instead
         events = read_events(response)
         assert events, "stream had no events"
         for event in events:
             STREAM_EVENT.validate(event)
     return response
+
+
+def _assert_documented(response):
+    """The path, method, status code and media type must all appear in the spec."""
+    path = response.request.path
+    template = next(p for p in SPEC["paths"] if re.fullmatch(re.sub(r"\{\w+\}", r"[^/]+", p), path))
+    operation = SPEC["paths"][template][response.request.method.lower()]
+    documented = operation["responses"][str(response.status_code)]
+    if "$ref" in documented:
+        documented = SPEC["components"]["responses"][documented["$ref"].split("/")[-1]]
+    assert response.mimetype in documented["content"], (path, response.mimetype)
 
 
 class FakeSandbox:
@@ -100,6 +115,7 @@ def test_full_user_journey_matches_the_spec(api):
     check(api.post(f"/chat/sessions/{sid}/messages", headers=auth, json={"message": "How do I reverse a list?"}))
     check(api.post(f"/chat/sessions/{sid}/messages", headers=auth, json={"message": ""}))  # 400
     check(api.get(f"/chat/sessions/{sid}/messages", headers=auth))
+    check(api.get(f"/chat/sessions/{sid}/export", headers=auth))
     check(api.post(f"/chat/sessions/{sid}/regenerate", headers=auth))
     check(api.get("/chat/sessions/999999/messages", headers=auth))  # 404
 

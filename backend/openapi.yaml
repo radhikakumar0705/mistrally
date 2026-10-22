@@ -245,6 +245,24 @@ paths:
         "429": { $ref: "#/components/responses/Error" }
         "502": { $ref: "#/components/responses/Error" }
 
+  /chat/sessions/{session_id}/export:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+    get:
+      tags: [chat]
+      summary: Download the conversation as a Markdown file
+      responses:
+        "200":
+          description: Markdown transcript (sent as an attachment named after the conversation)
+          headers:
+            Content-Disposition:
+              schema: { type: string }
+          content:
+            text/markdown:
+              schema: { type: string }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+
   /chat/sessions/{session_id}/regenerate:
     parameters:
       - $ref: "#/components/parameters/SessionId"

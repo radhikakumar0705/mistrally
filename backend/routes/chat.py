@@ -70,6 +70,18 @@ def get_messages(session_id):
     return jsonify([m.to_dict() for m in ChatService().history(_user_id(), session_id)]), 200
 
 
+@chat_bp.route("/sessions/<int:session_id>/export", methods=["GET"])
+@jwt_required()
+def export_session(session_id):
+    """Download the conversation as a Markdown file."""
+    filename, markdown = ChatService().export_markdown(_user_id(), session_id)
+    return Response(
+        markdown,
+        mimetype="text/markdown",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @chat_bp.route("/sessions/<int:session_id>/messages", methods=["POST"])
 @jwt_required()
 @limiter.limit("20/minute", key_func=user_or_ip)

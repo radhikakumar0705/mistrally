@@ -9,7 +9,7 @@ from models.chat_history import ChatHistory
 from models.chat_session import DEFAULT_TITLE, ChatSession
 from observability import LLM_STREAMS, RAG_CHUNKS_USED, RAG_RETRIEVAL_SECONDS, StreamMetrics
 from repositories import ChatSessionRepository, MessageRepository
-from services import llm, retrieval
+from services import export, llm, retrieval
 from services.errors import DependencyUnavailable, InvalidInput, NotFound
 from services.prompts import build_messages
 
@@ -85,6 +85,11 @@ class ChatService:
 
     def history(self, user_id: int, session_id: int) -> list[ChatHistory]:
         return self.messages.for_session(self._owned(user_id, session_id))
+
+    def export_markdown(self, user_id: int, session_id: int) -> tuple[str, str]:
+        """The conversation as Markdown, plus a safe file name for downloading it."""
+        session = self._owned(user_id, session_id)
+        return export.export_filename(session.title), export.to_markdown(session, self.messages.for_session(session))
 
     def available_models(self) -> dict:
         try:
