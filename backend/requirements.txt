@@ -27,7 +27,7 @@ Authlib==1.6.9
 
 # Observability
 prometheus-client==0.21.0
-python-json-logger==2.0.7
+python-json-logger==4.2.0
 opentelemetry-sdk==1.38.0
 opentelemetry-exporter-otlp-proto-grpc==1.38.0
 opentelemetry-instrumentation-flask==0.59b0
