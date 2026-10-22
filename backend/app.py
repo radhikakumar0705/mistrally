@@ -115,6 +115,13 @@ def create_app(config_object=Config):
 
 
 def _register_error_handlers(app):
+    from services.errors import DomainError
+
+    # Services raise domain errors; this is the one place they become HTTP responses
+    @app.errorhandler(DomainError)
+    def domain_error(error):
+        return jsonify(error.to_dict()), error.status
+
     # Bad or expired tokens all return 401 so the frontend can send the user back to login
     @jwt.invalid_token_loader
     def invalid_token(reason):

@@ -1,5 +1,7 @@
 """
-Model provider layer. Routes call these functions; LLM_PROVIDER picks the backend:
+Model provider layer (Strategy pattern). `Provider` is the strategy interface (stream_chat,
+complete_json, list_models); each backend is a concrete strategy, and `get_provider()` picks one from
+configuration, so callers like ChatService never depend on a specific model API. LLM_PROVIDER selects:
 
     ollama  local models via Ollama (default)
     groq    Groq's OpenAI-compatible API (used for the hosted demo)
