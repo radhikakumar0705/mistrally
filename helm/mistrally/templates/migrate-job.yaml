@@ -1,0 +1,42 @@
+# Database migrations run as a Helm hook: after the first install, and before every upgrade
+# so new code never starts against an old schema.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate
+  labels: {{- include "mistrally.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: post-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
+    # Argo CD renders the chart without Helm hooks: run it during the sync, after wave 0
+    # (MySQL and the other resources) is healthy
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 10  # MySQL may still be starting on a fresh install
+  template:
+    metadata:
+      labels: {{- include "mistrally.component" (list . "migrate") | nindent 8 }}
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: migrate
+          image: {{ include "mistrally.image" (list . "backend") }}
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
+          command: ["flask", "--app", "wsgi", "db", "upgrade"]
+          envFrom:
+            - configMapRef: { name: backend-config }
+          env: {{- include "mistrally.backendSecretEnv" . | nindent 12 }}
+          resources:
+            requests: { cpu: 50m, memory: 256Mi }
+            limits: { memory: 768Mi }
+          securityContext: {{- include "mistrally.containerSecurity" . | nindent 12 }}
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - { name: tmp, emptyDir: {} }

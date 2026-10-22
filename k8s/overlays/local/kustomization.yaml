@@ -1,0 +1,30 @@
+# Local cluster (Docker Desktop Kubernetes or kind) using images built on this machine.
+#   cp k8s/overlays/local/secrets.env.example k8s/overlays/local/secrets.env   (fill it in)
+#   kubectl apply -k k8s/overlays/local
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+# Uncomment to run Ollama inside the cluster instead of using the host's
+# components:
+#   - ../../components/ollama
+
+# The hash suffix on the generated Secret rolls the pods whenever a secret changes
+secretGenerator:
+  - name: mistrally-secrets
+    namespace: mistrally
+    envs:
+      - secrets.env
+
+images:
+  - name: mistrally-backend
+    newName: mistrally-backend
+    newTag: local
+  - name: mistrally-frontend
+    newName: mistrally-frontend
+    newTag: local
+  - name: mistrally-sandbox
+    newName: mistrally-sandbox
+    newTag: local

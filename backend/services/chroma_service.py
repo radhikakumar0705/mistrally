@@ -1,33 +1,116 @@
+"""ChromaDB access: storing document chunks and fetching candidates for retrieval."""
+from functools import cache, lru_cache
+
 import chromadb
-from sentence_transformers import SentenceTransformer
+from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
+from flask import current_app
 
-# Persistent vector DB in ./data/chroma
-chroma_client = chromadb.PersistentClient(path="./data/chroma")
-collection = chroma_client.get_or_create_collection("mistrally_docs")
+from services.embeddings import embedder
 
-# Embedding model (fast + lightweight)
-embedder = SentenceTransformer("all-MiniLM-L6-v2")
+COLLECTION_NAME = "mistrally_docs"
 
-def add_document(doc_text: str, doc_id: str):
-    """
-    Add a document (or chunk) to Chroma for retrieval-augmented generation (RAG).
-    """
-    embedding = embedder.encode([doc_text])[0].tolist()
-    collection.add(
-        ids=[doc_id],
-        embeddings=[embedding],
-        documents=[doc_text]
+
+@lru_cache(maxsize=1)
+def _embedding_function():
+    # Registered on the collection so its stored configuration stays compatible; never called, because
+    # add_chunks and dense_search always pass embeddings computed by services.embeddings
+    return DefaultEmbeddingFunction()
+
+
+@cache
+def _collection_for(host, port, path):
+    if host:
+        client = chromadb.HttpClient(host=host, port=port)
+    else:
+        client = chromadb.PersistentClient(path=path)
+    return client.get_or_create_collection(COLLECTION_NAME, embedding_function=_embedding_function())
+
+
+def _collection():
+    config = current_app.config
+    return _collection_for(config["CHROMA_HOST"], config["CHROMA_PORT"], config["CHROMA_DB_PATH"])
+
+
+def embed(texts):
+    """Embeddings are computed here (fast, see services/embeddings.py) and passed to Chroma explicitly."""
+    return embedder(current_app.config["EMBEDDING_THREADS"])(texts)
+
+
+def add_chunks(document, chunks, start_index=0):
+    """Embed and store a batch of a document's chunks. Chunks carry the owner's user_id for filtering."""
+    metadatas = []
+    for i, chunk in enumerate(chunks):
+        metadata = {
+            "user_id": document.user_id,
+            "doc_id": document.id,
+            "source": document.filename,
+            "chunk": start_index + i,
+        }
+        if chunk.get("page") is not None:
+            metadata["page"] = chunk["page"]
+        if chunk.get("section"):
+            metadata["section"] = chunk["section"][:200]
+        metadatas.append(metadata)
+
+    texts = [c["text"] for c in chunks]
+    _collection().add(
+        ids=[f"{document.id}-{start_index + i}" for i in range(len(chunks))],
+        documents=texts,
+        embeddings=embed(texts),
+        metadatas=metadatas,
     )
 
-def retrieve_context(query: str, top_k: int = 3) -> str:
-    """
-    Retrieve the most relevant text chunks based on semantic similarity.
-    """
-    query_embedding = embedder.encode([query])[0].tolist()
-    results = collection.query(query_embeddings=[query_embedding], n_results=top_k)
 
-    if not results["documents"] or not results["documents"][0]:
-        return ""
+def delete_document_chunks(doc_id):
+    _collection().delete(where={"doc_id": doc_id})
 
-    # Concatenate top retrieved contexts
-    return "\n".join(results["documents"][0])
+
+def delete_chunks_by_source(user_id, source):
+    """Chunks stored before documents had ids are identified by owner and file name."""
+    _collection().delete(where={"$and": [{"user_id": user_id}, {"source": source}]})
+
+
+def dense_search(query, user_id, n_results):
+    """Nearest chunks by embedding similarity: [{"id", "text", "metadata", "distance"}]."""
+    collection = _collection()
+    if collection.count() == 0:
+        return []
+    results = collection.query(
+        query_embeddings=embed([query]),
+        n_results=n_results,
+        where={"user_id": user_id},
+        include=["documents", "metadatas", "distances"],
+    )
+    return [
+        {"id": chunk_id, "text": text, "metadata": metadata, "distance": distance}
+        for chunk_id, text, metadata, distance in zip(
+            results["ids"][0], results["documents"][0], results["metadatas"][0], results["distances"][0],
+            strict=False,
+        )
+    ]
+
+
+def document_text(doc_id):
+    """A document's chunks in order, joined (used as study material for quizzes and flashcards)."""
+    result = _collection().get(where={"doc_id": doc_id}, include=["documents", "metadatas"])
+    ordered = sorted(
+        zip(result["metadatas"], result["documents"], strict=False), key=lambda pair: pair[0].get("chunk", 0)
+    )
+    return "\n\n".join(text for _metadata, text in ordered)
+
+
+def user_chunks(user_id):
+    """Every chunk the user owns, for keyword (BM25) search: (ids, texts, metadatas)."""
+    result = _collection().get(where={"user_id": user_id}, include=["documents", "metadatas"])
+    return result["ids"], result["documents"], result["metadatas"]
+
+
+def legacy_documents(user_id):
+    """Documents present in Chroma, grouped by doc_id (or file name for chunks from older versions)."""
+    _ids, _texts, metadatas = user_chunks(user_id)
+    documents = {}
+    for metadata in metadatas:
+        doc_id = metadata.get("doc_id") or f"legacy-{metadata.get('source', 'unknown')}"
+        doc = documents.setdefault(doc_id, {"id": doc_id, "filename": metadata.get("source", "unknown"), "chunks": 0})
+        doc["chunks"] += 1
+    return list(documents.values())

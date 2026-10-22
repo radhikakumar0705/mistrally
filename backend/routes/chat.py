@@ -1,88 +1,98 @@
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from extensions import db
-from models.chat_history import ChatHistory
-import requests
-import chromadb
-from sentence_transformers import SentenceTransformer
-import os
+"""HTTP layer for conversations: parse the request, call ChatService, serialize the result."""
+import json
 
-chat_bp = Blueprint('chat', __name__)
+from flask import Blueprint, Response, jsonify, request, stream_with_context
+from flask_jwt_extended import get_jwt_identity, jwt_required
 
-CHROMA_PATH = os.getenv("CHROMA_DB_PATH", "./chroma_db")
-OLLAMA_URL = "http://localhost:11434/api/generate"
-EMBED_MODEL = SentenceTransformer("all-MiniLM-L6-v2")
+from extensions import limiter, user_or_ip
+from services.chat_service import ChatService, ReplyStream
 
-chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
-collection = chroma_client.get_or_create_collection("chat_docs")
-
-@chat_bp.route("/send", methods=["POST"])
-@jwt_required()
-def chat():
-    user_id = get_jwt_identity()
-    data = request.get_json()
-    user_msg = data.get("message")
-
-    if not user_msg:
-        return jsonify({"error": "Message is required"}), 400
-
-    query_emb = EMBED_MODEL.encode(user_msg).tolist()
-    results = collection.query(query_embeddings=[query_emb], n_results=3)
-
-    retrieved_context = " ".join(results["documents"][0]) if results["documents"] else ""
-
-    history = ChatHistory.query.filter_by(user_id=user_id).order_by(ChatHistory.timestamp.desc()).limit(5).all()
-    conversation_context = "\n".join([f"User: {h.user_message}\nBot: {h.bot_response}" for h in reversed(history)])
-
-   
-    prompt = f"""
-    You are Mistrally, a helpful AI teaching assistant.
-    Context from memory: {retrieved_context}
-    Conversation so far:
-    {conversation_context}
-    New message: {user_msg}
-    """
-
-    payload = {
-        "model": "mistral",
-        "prompt": prompt,
-        "stream": False
-    }
-
-    try:
-        res = requests.post(OLLAMA_URL, json=payload)
-        if res.status_code != 200:
-            return jsonify({"error": "Ollama request failed", "details": res.text}), 500
-
-        bot_response = res.json().get("response", "").strip()
+chat_bp = Blueprint("chat", __name__)
 
 
-        chat_entry = ChatHistory(
-            user_id=user_id,
-            user_message=user_msg,
-            bot_response=bot_response
-        )
-        db.session.add(chat_entry)
-        db.session.commit()
+def _user_id() -> int:
+    return int(get_jwt_identity())
 
-        return jsonify({"response": bot_response})
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+def _body() -> dict:
+    return request.get_json(silent=True) or {}
 
-@chat_bp.route("/history", methods=["GET"])
-@jwt_required()
-def get_chat_history():
-    print("Authorization Header:", request.headers.get("Authorization"))
-    user_id = get_jwt_identity()
 
-    history = (
-        ChatHistory.query.filter_by(user_id=user_id)
-        .order_by(ChatHistory.timestamp.desc())
-        .limit(10)
-        .all()
+def _event_stream(reply: ReplyStream) -> Response:
+    def generate():
+        # `yield from` passes a client disconnect (generator close) through to the reply, which saves
+        # the partial answer
+        yield from (f"data: {json.dumps(event)}\n\n" for event in reply.events())
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
-   
 
-    data = [h.to_dict() for h in reversed(history)]  
-    return jsonify(data), 200
+
+@chat_bp.route("/models", methods=["GET"])
+@jwt_required()
+def list_models():
+    return jsonify(ChatService().available_models()), 200
+
+
+@chat_bp.route("/sessions", methods=["GET"])
+@jwt_required()
+def list_sessions():
+    return jsonify([s.to_dict() for s in ChatService().list_sessions(_user_id())]), 200
+
+
+@chat_bp.route("/sessions", methods=["POST"])
+@jwt_required()
+def create_session():
+    body = _body()
+    session = ChatService().create_session(_user_id(), body.get("title"), body.get("model"))
+    return jsonify(session.to_dict()), 201
+
+
+@chat_bp.route("/sessions/<int:session_id>", methods=["PATCH"])
+@jwt_required()
+def update_session(session_id):
+    return jsonify(ChatService().update_session(_user_id(), session_id, _body()).to_dict()), 200
+
+
+@chat_bp.route("/sessions/<int:session_id>", methods=["DELETE"])
+@jwt_required()
+def delete_session(session_id):
+    ChatService().delete_session(_user_id(), session_id)
+    return "", 204
+
+
+@chat_bp.route("/sessions/<int:session_id>/messages", methods=["GET"])
+@jwt_required()
+def get_messages(session_id):
+    return jsonify([m.to_dict() for m in ChatService().history(_user_id(), session_id)]), 200
+
+
+@chat_bp.route("/sessions/<int:session_id>/export", methods=["GET"])
+@jwt_required()
+def export_session(session_id):
+    """Download the conversation as a Markdown file."""
+    filename, markdown = ChatService().export_markdown(_user_id(), session_id)
+    return Response(
+        markdown,
+        mimetype="text/markdown",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@chat_bp.route("/sessions/<int:session_id>/messages", methods=["POST"])
+@jwt_required()
+@limiter.limit("20/minute", key_func=user_or_ip)
+def send_message(session_id):
+    """Send a message and stream the reply back as server-sent events."""
+    return _event_stream(ChatService().start_reply(_user_id(), session_id, _body().get("message")))
+
+
+@chat_bp.route("/sessions/<int:session_id>/regenerate", methods=["POST"])
+@jwt_required()
+@limiter.limit("20/minute", key_func=user_or_ip)
+def regenerate(session_id):
+    """Answer the last message again, replacing the previous answer once the new one is saved."""
+    return _event_stream(ChatService().start_regeneration(_user_id(), session_id))

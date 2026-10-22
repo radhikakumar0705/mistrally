@@ -1,0 +1,9 @@
+project_id = "my-gcp-project"
+region     = "us-central1"
+zone       = "us-central1-a"
+
+# Restrict the Kubernetes API to your own address
+master_authorized_cidrs = ["203.0.113.10/32"]
+
+# Cheaper nodes for a demo that may be interrupted
+spot_nodes = true

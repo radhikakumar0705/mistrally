@@ -1,0 +1,22 @@
+# Public HTTPS link to the stack on this machine, through a Cloudflare quick tunnel: no account,
+# no open ports, no domain. The link works while this machine and the stack are running, and
+# changes every time the tunnel restarts.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.tunnel.yml up -d --build
+#   docker compose -f docker-compose.yml -f docker-compose.tunnel.yml logs tunnel | grep trycloudflare.com
+#
+# Answers come from the model in .env (LLM_PROVIDER): ollama needs Ollama running here,
+# groq needs GROQ_API_KEY, and fake gives canned answers.
+
+services:
+  tunnel:
+    image: cloudflare/cloudflared:2025.10.0
+    restart: unless-stopped
+    command: ["tunnel", "--no-autoupdate", "--url", "http://frontend:8080"]
+    depends_on:
+      - frontend
+
+  backend:
+    environment:
+      # cloudflared -> nginx -> API: trust two proxies for the client address (rate limits, logs)
+      PROXY_FIX_HOPS: "2"

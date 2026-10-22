@@ -1,0 +1,12 @@
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["venv", "migrations/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E501", "UP007"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]

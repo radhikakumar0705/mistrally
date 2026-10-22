@@ -1,0 +1,40 @@
+name: Load test
+
+# Run on demand: Actions -> Load test -> Run workflow
+on:
+  workflow_dispatch:
+    inputs:
+      users:
+        description: Concurrent users
+        default: "20"
+
+permissions:
+  contents: read
+
+jobs:
+  k6:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure the stack (fake model, test secrets)
+        run: |
+          cp .env.example .env
+          for key in SECRET_KEY JWT_SECRET_KEY MYSQL_PASSWORD MYSQL_ROOT_PASSWORD SANDBOX_TOKEN; do
+            sed -i "s/^$key=$/$key=ci-$(openssl rand -hex 16)/" .env
+          done
+      - name: Start the stack
+        env:
+          FAKE_LLM_DELAY: "0.02"
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.test.yml up -d --build
+          for _ in $(seq 1 60); do curl -sf http://localhost:8090/api/health/ready && break; sleep 5; done
+      - name: Run k6
+        run: |
+          docker run --rm -i --network mistrally_default -e BASE_URL=http://frontend:8080 \
+            -e USERS=${{ inputs.users }} -v "$PWD/loadtest:/scripts" grafana/k6:0.54.0 \
+            run --summary-export=/scripts/summary.json /scripts/chat.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: k6-summary
+          path: loadtest/summary.json

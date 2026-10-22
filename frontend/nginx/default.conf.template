@@ -1,0 +1,74 @@
+# One JSON line per request, with the request ID that is also passed to (and logged by) the API
+log_format json_access escape=json
+  '{"time":"$time_iso8601","request_id":"$request_id","method":"$request_method",'
+  '"path":"$uri","status":$status,"bytes":$body_bytes_sent,"duration_s":$request_time,'
+  '"upstream_s":"$upstream_response_time","client_ip":"$remote_addr","user_agent":"$http_user_agent"}';
+
+# Re-resolve the API's address while running, so a restarted backend container (new IP) keeps working.
+# NGINX_LOCAL_RESOLVERS is filled in from /etc/resolv.conf by the image's entrypoint (Docker or cluster DNS).
+resolver ${NGINX_LOCAL_RESOLVERS} valid=10s ipv6=off;
+
+upstream api {
+    zone api 64k;
+    server ${BACKEND_HOST} resolve;
+    keepalive 16;
+    # Must be shorter than gunicorn's keepalive (5 s), or nginx can reuse a connection the API is closing
+    keepalive_timeout 4s;
+}
+
+server {
+    listen 8080;
+    server_name _;
+    root /usr/share/nginx/html;
+
+    client_max_body_size 12m;
+    server_tokens off;
+    access_log /dev/stdout json_access;
+
+    gzip on;
+    gzip_min_length 1024;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    # Metrics are for Prometheus inside the network only
+    location = /api/metrics {
+        return 404;
+    }
+
+    # API: strip the /api prefix and pass through to Flask
+    location /api/ {
+        proxy_pass http://api/;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Request-ID $request_id;
+
+        # Stream chat tokens to the browser as soon as they are generated
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 300s;
+    }
+
+    # Fingerprinted build assets never change
+    location /assets/ {
+        expires 1y;
+        try_files $uri =404;
+    }
+
+    # Single-page app: unknown paths serve index.html, which must never be cached
+    location / {
+        expires -1;
+        try_files $uri /index.html;
+    }
+}

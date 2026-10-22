@@ -1,0 +1,15 @@
+# Settings for automated end-to-end and load tests: a deterministic fake model and no rate limits.
+#   docker compose -f docker-compose.yml -f docker-compose.test.yml up -d --build
+x-test-env: &test-env
+  LLM_PROVIDER: fake
+  FAKE_LLM_DELAY: ${FAKE_LLM_DELAY:-0.1}
+  RATELIMIT_ENABLED: "false"
+  OTEL_EXPORTER_OTLP_ENDPOINT: ""
+
+services:
+  backend:
+    environment: *test-env
+  worker:
+    environment: *test-env
+  migrate:
+    environment: *test-env

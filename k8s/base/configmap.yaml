@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+data:
+  DB_HOST: mysql
+  DB_PORT: "3306"
+  DB_NAME: mistrally
+  DB_USER: mistrally
+  CHROMA_HOST: chroma
+  CHROMA_PORT: "8000"
+  # Ollama on the host machine (Docker Desktop / kind); the "ollama" component points this in-cluster
+  LLM_PROVIDER: ollama
+  OLLAMA_URL: http://host.docker.internal:11434
+  OLLAMA_MODEL: mistral
+  RATELIMIT_STORAGE_URI: redis://redis:6379/0
+  TASK_QUEUE_URL: redis://redis:6379/1
+  SANDBOX_URL: http://sandbox:8080
+  # ingress-nginx -> frontend nginx -> backend
+  PROXY_FIX_HOPS: "2"
+  LOG_LEVEL: INFO
+  PUBLIC_URL: http://mistrally.localhost
+  COOKIE_SECURE: "false"
+  WEB_CONCURRENCY: "2"

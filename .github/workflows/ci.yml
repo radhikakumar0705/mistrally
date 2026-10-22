@@ -1,0 +1,219 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (lint + tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+      - name: Cache embedding and re-ranking models
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/chroma
+            ~/.cache/flashrank
+          key: models-minilm-l6-flashrank-minilm-l12
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check .
+      - run: pytest -q
+      - name: Retrieval quality gate (docs/rag-evaluation.md)
+        run: python -m eval.run_retrieval --check
+
+  frontend:
+    name: Frontend (lint + tests + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: API types match openapi.yaml
+        run: |
+          npm run types:api
+          git diff --exit-code -- src/api/schema.d.ts || (echo "Run 'npm run types:api' and commit the result" && exit 1)
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build  # includes tsc --noEmit (strict)
+
+  e2e:
+    name: End-to-end (Playwright on the Docker stack)
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure the stack (fake model, test secrets)
+        run: |
+          cp .env.example .env
+          for key in SECRET_KEY JWT_SECRET_KEY MYSQL_PASSWORD MYSQL_ROOT_PASSWORD SANDBOX_TOKEN; do
+            sed -i "s/^$key=$/$key=ci-$(openssl rand -hex 16)/" .env
+          done
+      - name: Start the stack
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.test.yml up -d --build
+          for _ in $(seq 1 60); do curl -sf http://localhost:8090/api/health/ready && break; sleep 5; done
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: npm run e2e
+        working-directory: frontend
+      - name: Stack logs
+        if: failure()
+        run: docker compose logs --tail 200
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: frontend/playwright-report
+          retention-days: 7
+
+  sandbox:
+    name: Code sandbox limits
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t mistrally-sandbox:ci sandbox
+      - name: Run the limit checks with production restrictions
+        run: >
+          docker run --rm --network none --read-only --tmpfs /tmp:size=16m --cap-drop ALL
+          --security-opt no-new-privileges --memory 512m --pids-limit 64 --cpus 1
+          mistrally-sandbox:ci python smoke_test.py
+
+  manifests:
+    name: Compose + Kubernetes manifests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate docker-compose.yml
+        run: |
+          cp .env.example .env && sed -i 's/=$/=ci-placeholder/' .env
+          docker compose config --quiet
+          docker compose -f docker-compose.yml -f docker-compose.tunnel.yml config --quiet
+          SITE_ADDRESS=demo.example.com docker compose -f docker-compose.yml -f docker-compose.prod.yml config --quiet
+      - name: Render and validate Kubernetes manifests
+        run: |
+          sed 's/=$/=ci-placeholder/' k8s/overlays/local/secrets.env.example > k8s/overlays/local/secrets.env
+          kubectl kustomize k8s/overlays/local > rendered.yaml
+          docker run --rm -v "$PWD:/work" ghcr.io/yannh/kubeconform:v0.6.7 \
+            -strict -summary -kubernetes-version 1.30.0 /work/rendered.yaml
+      - name: Lint and render the Helm chart
+        run: |
+          mkdir rendered
+          for values in values.yaml values-kind.yaml values-gke.yaml; do
+            helm lint helm/mistrally -f "helm/mistrally/$values"
+            helm template mistrally helm/mistrally -n mistrally -f "helm/mistrally/$values" > "rendered/$values"
+          done
+          cp deploy/cert-manager/*.yaml deploy/argocd/*.yaml rendered/
+      - name: Validate chart output, cert-manager and Argo CD resources
+        run: |
+          docker run --rm -v "$PWD/rendered:/work" ghcr.io/yannh/kubeconform:v0.6.7 \
+            -strict -summary -kubernetes-version 1.30.0 \
+            -schema-location default \
+            -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+            /work
+      - name: Check the setup scripts
+        run: shellcheck deploy/kind/setup.sh deploy/demo/setup-vm.sh
+
+  terraform:
+    name: Terraform (GKE)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: deploy/terraform/gke
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+      - run: terraform fmt -check -diff
+      - run: terraform init -backend=false -input=false
+      - run: terraform validate
+
+  images:
+    name: Docker images
+    needs: [backend, frontend, sandbox, manifests]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        component: [backend, frontend, sandbox]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/mistrally-${{ matrix.component }}
+          tags: |
+            type=sha,format=short
+            type=ref,event=branch
+      - name: Build for scanning
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.component }}
+          load: true
+          tags: mistrally-${{ matrix.component }}:scan
+          cache-from: type=gha,scope=${{ matrix.component }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
+      - name: Vulnerability scan (fails on fixable HIGH/CRITICAL)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
+        with:
+          image-ref: mistrally-${{ matrix.component }}:scan
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+      - name: Software bill of materials (SPDX)
+        uses: anchore/sbom-action@v0
+        with:
+          image: mistrally-${{ matrix.component }}:scan
+          format: spdx-json
+          artifact-name: sbom-${{ matrix.component }}.spdx.json
+      - name: Push
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.component }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.component }}
