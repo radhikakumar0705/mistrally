@@ -1,43 +1,43 @@
 # Web framework
-Flask==3.0.3
+Flask==3.1.3
 Flask-Cors==4.0.2
-Flask-JWT-Extended==4.6.0
+Flask-JWT-Extended==4.7.4
 Flask-Bcrypt==1.0.1
 Flask-SQLAlchemy==3.1.1
-Flask-Migrate==4.0.7
+Flask-Migrate==4.1.0
 Flask-Limiter==3.8.0
 gunicorn==23.0.0
 
 # Database
-SQLAlchemy==2.0.32
+SQLAlchemy==2.1.5
 mysql-connector-python==9.1.0
 
 # Environment configuration
-python-dotenv==1.0.1
+python-dotenv==1.2.4
 
 # AI and RAG (embeddings run on ONNX Runtime via chromadb, no PyTorch needed)
-requests==2.32.3
-chromadb==1.3.5
+requests==2.34.2
+chromadb==1.5.9
 numpy==1.26.4
-pypdf==6.19.0
+pypdf==6.21.1
 
 # Shared rate-limit storage across workers/replicas (RATELIMIT_STORAGE_URI=redis://...)
 redis==5.2.0
-Authlib==1.6.9
+Authlib==1.9.1
 
 # Observability
-prometheus-client==0.21.0
+prometheus-client==0.26.0
 python-json-logger==2.0.7
-opentelemetry-sdk==1.38.0
-opentelemetry-exporter-otlp-proto-grpc==1.38.0
-opentelemetry-instrumentation-flask==0.59b0
-opentelemetry-instrumentation-requests==0.59b0
-opentelemetry-instrumentation-sqlalchemy==0.59b0
+opentelemetry-sdk==1.45.1
+opentelemetry-exporter-otlp-proto-grpc==1.45.1
+opentelemetry-instrumentation-flask==0.66b1
+opentelemetry-instrumentation-requests==0.66b1
+opentelemetry-instrumentation-sqlalchemy==0.66b1
 
 # Background jobs and retrieval quality
-rq==2.0.0
+rq==2.12.0
 rank-bm25==0.2.2
-flashrank==0.2.9
+flashrank==0.2.10
 
 # Pinned above the transitive default for security fixes (Trivy)
 certifi==2026.10.19
