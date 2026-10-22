@@ -30,4 +30,4 @@ ingress:
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
   tls:
     enabled: true
-    clusterIssuer: mistrally-ca
+    clusterIssuer: sockrat-ca

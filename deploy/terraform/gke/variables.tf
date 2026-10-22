@@ -18,7 +18,7 @@ variable "zone" {
 variable "name" {
   description = "Prefix for resource names"
   type        = string
-  default     = "mistrally"
+  default     = "sockrat"
 }
 
 variable "machine_type" {

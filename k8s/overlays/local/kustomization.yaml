@@ -13,18 +13,18 @@ resources:
 
 # The hash suffix on the generated Secret rolls the pods whenever a secret changes
 secretGenerator:
-  - name: mistrally-secrets
-    namespace: mistrally
+  - name: sockrat-secrets
+    namespace: sockrat
     envs:
       - secrets.env
 
 images:
-  - name: mistrally-backend
-    newName: mistrally-backend
+  - name: sockrat-backend
+    newName: sockrat-backend
     newTag: local
-  - name: mistrally-frontend
-    newName: mistrally-frontend
+  - name: sockrat-frontend
+    newName: sockrat-frontend
     newTag: local
-  - name: mistrally-sandbox
-    newName: mistrally-sandbox
+  - name: sockrat-sandbox
+    newName: sockrat-sandbox
     newTag: local

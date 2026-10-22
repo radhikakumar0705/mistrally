@@ -21,7 +21,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: chroma
-  labels: { app.kubernetes.io/name: chroma, app.kubernetes.io/part-of: mistrally }
+  labels: { app.kubernetes.io/name: chroma, app.kubernetes.io/part-of: sockrat }
 spec:
   replicas: 1
   strategy: { type: Recreate }  # the volume can only be mounted by one pod
@@ -29,7 +29,7 @@ spec:
     matchLabels: { app.kubernetes.io/name: chroma }
   template:
     metadata:
-      labels: { app.kubernetes.io/name: chroma, app.kubernetes.io/part-of: mistrally }
+      labels: { app.kubernetes.io/name: chroma, app.kubernetes.io/part-of: sockrat }
     spec:
       # Chroma reads CHROMA_* variables as config; the injected CHROMA_PORT=tcp://... crashes it
       enableServiceLinks: false

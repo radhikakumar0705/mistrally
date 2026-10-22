@@ -30,9 +30,9 @@ def test_markdown_has_title_and_alternating_turns():
     assert lines[0] == "# Recursion help"
     assert "**You:**" in markdown
     assert "What is recursion?" in markdown
-    assert "**Mistrally:**" in markdown
+    assert "**sockRat:**" in markdown
     assert "A function calling itself." in markdown
-    assert markdown.index("**You:**") < markdown.index("**Mistrally:**")
+    assert markdown.index("**You:**") < markdown.index("**sockRat:**")
 
 
 def test_sources_are_listed_with_pages():

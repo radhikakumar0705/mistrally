@@ -9,7 +9,7 @@ import Markdown from "./Markdown";
 
 function TypingDots() {
   return (
-    <span className="inline-flex items-center gap-1 py-2" aria-label="Mistrally is thinking">
+    <span className="inline-flex items-center gap-1 py-2" aria-label="sockRat is thinking">
       {[0, 150, 300].map((delay) => (
         <span
           key={delay}

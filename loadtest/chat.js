@@ -2,7 +2,7 @@
  * Load test for the chat API (k6, https://k6.io). Run against the stack started with the fake model:
  *
  *   docker compose -f docker-compose.yml -f docker-compose.test.yml up -d
- *   docker run --rm -i --network mistrally_default -e BASE_URL=http://frontend:8080 \
+ *   docker run --rm -i --network sockrat_default -e BASE_URL=http://frontend:8080 \
  *     -v "$PWD/loadtest:/scripts" grafana/k6:0.54.0 run /scripts/chat.js
  *
  * Two kinds of users send messages concurrently: users without documents (prompt + model only) and

@@ -31,10 +31,10 @@ spec:
         seccompProfile: { type: RuntimeDefault }
       containers:
         - name: frontend
-          image: mistrally-frontend
+          image: sockrat-frontend
           env:
             # nginx resolves upstreams itself and ignores resolv.conf search domains: use the full name
-            - { name: BACKEND_HOST, value: "backend.mistrally.svc.cluster.local:5000" }
+            - { name: BACKEND_HOST, value: "backend.sockrat.svc.cluster.local:5000" }
           ports:
             - { name: http, containerPort: 8080 }
           readinessProbe:

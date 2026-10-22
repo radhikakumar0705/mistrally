@@ -1,8 +1,8 @@
 {
-  "uid": "mistrally-overview",
-  "title": "Mistrally overview",
+  "uid": "sockrat-overview",
+  "title": "sockRat overview",
   "tags": [
-    "mistrally"
+    "sockrat"
   ],
   "timezone": "browser",
   "schemaVersion": 39,
@@ -34,7 +34,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "histogram_quantile(0.5, sum by (le) (rate(mistrally_llm_time_to_first_token_seconds_bucket[5m])))",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(sockrat_llm_time_to_first_token_seconds_bucket[5m])))",
           "legendFormat": "p50"
         }
       ],
@@ -76,7 +76,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(mistrally_llm_time_to_first_token_seconds_bucket[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(sockrat_llm_time_to_first_token_seconds_bucket[5m])))",
           "legendFormat": "p95"
         }
       ],
@@ -117,7 +117,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "histogram_quantile(0.5, sum by (le) (rate(mistrally_llm_chunks_per_second_bucket[5m])))",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(sockrat_llm_chunks_per_second_bucket[5m])))",
           "legendFormat": "p50"
         }
       ],
@@ -159,7 +159,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "round(sum(increase(mistrally_llm_streams_total{outcome=\"completed\"}[1h])))",
+          "expr": "round(sum(increase(sockrat_llm_streams_total{outcome=\"completed\"}[1h])))",
           "legendFormat": "completed"
         }
       ],
@@ -200,7 +200,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "histogram_quantile(0.5, sum by (le, model) (rate(mistrally_llm_time_to_first_token_seconds_bucket[5m])))",
+          "expr": "histogram_quantile(0.5, sum by (le, model) (rate(sockrat_llm_time_to_first_token_seconds_bucket[5m])))",
           "legendFormat": "p50 {{model}}"
         },
         {
@@ -209,7 +209,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, model) (rate(mistrally_llm_time_to_first_token_seconds_bucket[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le, model) (rate(sockrat_llm_time_to_first_token_seconds_bucket[5m])))",
           "legendFormat": "p95 {{model}}"
         }
       ],
@@ -246,7 +246,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (outcome) (rate(mistrally_llm_streams_total[5m]))",
+          "expr": "sum by (outcome) (rate(sockrat_llm_streams_total[5m]))",
           "legendFormat": "{{outcome}}"
         }
       ],
@@ -284,7 +284,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (status) (rate(mistrally_http_requests_total[5m]))",
+          "expr": "sum by (status) (rate(sockrat_http_requests_total[5m]))",
           "legendFormat": "{{status}}"
         }
       ],
@@ -321,7 +321,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, endpoint) (rate(mistrally_http_request_duration_seconds_bucket[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le, endpoint) (rate(sockrat_http_request_duration_seconds_bucket[5m])))",
           "legendFormat": "{{endpoint}}"
         }
       ],
@@ -358,7 +358,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "histogram_quantile(0.5, sum by (le) (rate(mistrally_rag_retrieval_seconds_bucket[5m])))",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(sockrat_rag_retrieval_seconds_bucket[5m])))",
           "legendFormat": "p50"
         },
         {
@@ -367,7 +367,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(mistrally_rag_retrieval_seconds_bucket[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(sockrat_rag_retrieval_seconds_bucket[5m])))",
           "legendFormat": "p95"
         }
       ],
@@ -404,7 +404,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "histogram_quantile(0.5, sum by (le) (rate(mistrally_rag_chunks_used_bucket[5m])))",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(sockrat_rag_chunks_used_bucket[5m])))",
           "legendFormat": "chunks used p50"
         },
         {
@@ -413,7 +413,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (status) (increase(mistrally_documents_ingested_total[15m]))",
+          "expr": "sum by (status) (increase(sockrat_documents_ingested_total[15m]))",
           "legendFormat": "ingested {{status}}"
         }
       ],

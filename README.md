@@ -1,9 +1,9 @@
-# Mistrally
+# sockRat
 
-[![CI](https://github.com/radhikakumar0705/mistrally/actions/workflows/ci.yml/badge.svg)](https://github.com/radhikakumar0705/mistrally/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/radhikakumar0705/mistrally/actions/workflows/codeql.yml/badge.svg)](https://github.com/radhikakumar0705/mistrally/actions/workflows/codeql.yml)
+[![CI](https://github.com/radhikakumar0705/sockrat/actions/workflows/ci.yml/badge.svg)](https://github.com/radhikakumar0705/sockrat/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/radhikakumar0705/sockrat/actions/workflows/codeql.yml/badge.svg)](https://github.com/radhikakumar0705/sockrat/actions/workflows/codeql.yml)
 
-A private AI teaching assistant for programmers. Mistrally streams answers from local LLMs (Mistral, Llama
+A private AI teaching assistant for programmers. sockRat streams answers from local LLMs (Mistral, Llama
 and others via **Ollama**) or hosted ones (**Groq**), answers questions about your own notes with
 **retrieval-augmented generation**, generates quizzes and flashcards, runs Python in a sandbox, and deploys
 anywhere from a laptop to **Kubernetes**.
@@ -98,8 +98,8 @@ docker compose -f docker-compose.yml -f docker-compose.tunnel.yml logs tunnel | 
 Open ports 80 and 443 in the cloud firewall, then run this on the VM:
 
 ```bash
-echo "GROQ_API_KEY=gsk_..." > ~/mistrally.secrets && chmod 600 ~/mistrally.secrets
-curl -fsSL https://raw.githubusercontent.com/radhikakumar0705/mistrally/master/deploy/demo/setup-vm.sh | bash
+echo "GROQ_API_KEY=gsk_..." > ~/sockrat.secrets && chmod 600 ~/sockrat.secrets
+curl -fsSL https://raw.githubusercontent.com/radhikakumar0705/sockrat/master/deploy/demo/setup-vm.sh | bash
 ```
 
 [setup-vm.sh](deploy/demo/setup-vm.sh) does the following:
@@ -121,7 +121,7 @@ deploy/kind/setup.sh            # then open https://localhost:8443
 deploy/kind/setup.sh --argocd   # or let Argo CD deploy it from GitHub (GitOps)
 ```
 
-The chart in [helm/mistrally](helm/mistrally) generates its secrets on first install and keeps them across
+The chart in [helm/sockrat](helm/sockrat) generates its secrets on first install and keeps them across
 upgrades, runs database migrations as a hook before every upgrade, and rolls pods when their config
 changes. HTTPS comes from a private CA managed by cert-manager
 ([local-ca.yaml](deploy/cert-manager/local-ca.yaml)); [letsencrypt.yaml](deploy/cert-manager/letsencrypt.yaml)
@@ -147,7 +147,7 @@ It is validated in CI (`fmt`, `validate`) but has not been applied: running it c
 ```bash
 cd deploy/terraform/gke && cp terraform.tfvars.example terraform.tfvars   # set project_id
 terraform init && terraform apply
-helm upgrade --install mistrally helm/mistrally -n mistrally --create-namespace -f helm/mistrally/values-gke.yaml
+helm upgrade --install sockrat helm/sockrat -n sockrat --create-namespace -f helm/sockrat/values-gke.yaml
 ```
 
 ### Kubernetes with Kustomize
@@ -158,7 +158,7 @@ Plain manifests, if you'd rather not use Helm:
 docker compose build
 cp k8s/overlays/local/secrets.env.example k8s/overlays/local/secrets.env   # fill in
 kubectl apply -k k8s/overlays/local
-kubectl -n mistrally port-forward svc/frontend 8090:80
+kubectl -n sockrat port-forward svc/frontend 8090:80
 ```
 
 ### Local development
@@ -184,7 +184,7 @@ End-to-end and load tests run against the Docker stack with a deterministic fake
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.test.yml up -d --build
 cd frontend && npx playwright install chromium && npm run e2e
-docker run --rm -i --network mistrally_default -e BASE_URL=http://frontend:8080 \
+docker run --rm -i --network sockrat_default -e BASE_URL=http://frontend:8080 \
   -v "$PWD/loadtest:/scripts" grafana/k6:0.54.0 run /scripts/chat.js
 ```
 
@@ -204,7 +204,7 @@ frontend/
 sandbox/          isolated Python runner
 monitoring/       Prometheus, alert rules, Grafana dashboard
 loadtest/         k6 load test and retrieval profiler
-helm/mistrally/   Helm chart, values for kind and GKE
+helm/sockrat/   Helm chart, values for kind and GKE
 k8s/              Kustomize base, overlays, optional Ollama component
 deploy/           kind cluster + setup script, cert-manager issuers, Argo CD app, Terraform for GKE
 docs/             design.md, rag-evaluation.md, performance.md

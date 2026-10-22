@@ -1,20 +1,20 @@
 groups:
-  - name: mistrally
+  - name: sockrat
     rules:
       - alert: HighTimeToFirstToken
-        expr: histogram_quantile(0.95, sum by (le) (rate(mistrally_llm_time_to_first_token_seconds_bucket[5m]))) > 10
+        expr: histogram_quantile(0.95, sum by (le) (rate(sockrat_llm_time_to_first_token_seconds_bucket[5m]))) > 10
         for: 5m
         labels: { severity: warning }
         annotations:
           summary: "p95 time to first token above 10s"
       - alert: ModelUnavailable
-        expr: sum(rate(mistrally_llm_streams_total{outcome=~"unavailable|error"}[5m])) > 0.1
+        expr: sum(rate(sockrat_llm_streams_total{outcome=~"unavailable|error"}[5m])) > 0.1
         for: 2m
         labels: { severity: critical }
         annotations:
           summary: "Answers are failing because the model is unavailable"
       - alert: HighServerErrorRate
-        expr: sum(rate(mistrally_http_requests_total{status=~"5.."}[5m])) / sum(rate(mistrally_http_requests_total[5m])) > 0.05
+        expr: sum(rate(sockrat_http_requests_total{status=~"5.."}[5m])) / sum(rate(sockrat_http_requests_total[5m])) > 0.05
         for: 5m
         labels: { severity: warning }
         annotations:

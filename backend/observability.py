@@ -21,7 +21,7 @@ from prometheus_client import (
     generate_latest,
 )
 
-access_log = logging.getLogger("mistrally.access")
+access_log = logging.getLogger("sockrat.access")
 
 # In multi-process mode metrics are files in this directory, created as soon as metrics are defined.
 # gunicorn's on_starting hook clears it; other entry points (flask CLI, tests) just need it to exist.
@@ -31,38 +31,38 @@ if os.environ.get("PROMETHEUS_MULTIPROC_DIR"):
 # ---- Metrics ----
 
 HTTP_REQUESTS = Counter(
-    "mistrally_http_requests_total", "HTTP requests handled", ["method", "endpoint", "status"]
+    "sockrat_http_requests_total", "HTTP requests handled", ["method", "endpoint", "status"]
 )
 HTTP_LATENCY = Histogram(
-    "mistrally_http_request_duration_seconds",
+    "sockrat_http_request_duration_seconds",
     "Time until the response headers are sent (streams continue afterwards)",
     ["method", "endpoint"],
     buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10),
 )
 LLM_TIME_TO_FIRST_TOKEN = Histogram(
-    "mistrally_llm_time_to_first_token_seconds",
+    "sockrat_llm_time_to_first_token_seconds",
     "Delay between sending a prompt and receiving the first piece of the answer",
     ["provider", "model"],
     buckets=(0.1, 0.25, 0.5, 1, 2, 4, 8, 16, 32, 64),
 )
-LLM_CHUNKS = Counter("mistrally_llm_stream_chunks_total", "Answer pieces streamed to clients", ["provider", "model"])
+LLM_CHUNKS = Counter("sockrat_llm_stream_chunks_total", "Answer pieces streamed to clients", ["provider", "model"])
 LLM_CHUNKS_PER_SECOND = Histogram(
-    "mistrally_llm_chunks_per_second",
+    "sockrat_llm_chunks_per_second",
     "Generation speed of each answer after the first piece",
     ["provider", "model"],
     buckets=(1, 5, 10, 20, 40, 80, 160, 320),
 )
 LLM_STREAMS = Counter(
-    "mistrally_llm_streams_total", "Answers by outcome", ["provider", "model", "outcome"]
+    "sockrat_llm_streams_total", "Answers by outcome", ["provider", "model", "outcome"]
 )  # outcome: completed | stopped | error | unavailable
 RAG_RETRIEVAL_SECONDS = Histogram(
-    "mistrally_rag_retrieval_seconds", "Document retrieval latency",
+    "sockrat_rag_retrieval_seconds", "Document retrieval latency",
     buckets=(0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5),
 )
 RAG_CHUNKS_USED = Histogram(
-    "mistrally_rag_chunks_used", "Document chunks passed to the model per question", buckets=(0, 1, 2, 3, 4, 6, 8, 12)
+    "sockrat_rag_chunks_used", "Document chunks passed to the model per question", buckets=(0, 1, 2, 3, 4, 6, 8, 12)
 )
-DOCUMENTS_INGESTED = Counter("mistrally_documents_ingested_total", "Document uploads by result", ["status"])
+DOCUMENTS_INGESTED = Counter("sockrat_documents_ingested_total", "Document uploads by result", ["status"])
 
 
 class StreamMetrics:

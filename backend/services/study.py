@@ -84,7 +84,7 @@ def _prompt(kind, count, difficulty, topic, context):
         else f"The topic is: {topic}"
     )
     return [
-        {"role": "system", "content": "You are Mistrally, a programming tutor who writes accurate study material."},
+        {"role": "system", "content": "You are sockRat, a programming tutor who writes accurate study material."},
         {"role": "user", "content": f"{task}\nGive it a short title. {source}"},
     ]
 

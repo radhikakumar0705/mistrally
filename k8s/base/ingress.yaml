@@ -2,7 +2,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: mistrally
+  name: sockrat
   annotations:
     nginx.ingress.kubernetes.io/proxy-buffering: "off"  # stream chat tokens immediately
     nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
@@ -10,7 +10,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: mistrally.localhost
+    - host: sockrat.localhost
       http:
         paths:
           - path: /

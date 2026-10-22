@@ -3,7 +3,7 @@
 ## Reporting a vulnerability
 
 Please report security issues privately through GitHub's
-[private vulnerability reporting](https://github.com/radhikakumar0705/mistrally/security/advisories/new)
+[private vulnerability reporting](https://github.com/radhikakumar0705/sockrat/security/advisories/new)
 rather than opening a public issue. Include steps to reproduce and the affected version or commit.
 
 ## How the project stays secure

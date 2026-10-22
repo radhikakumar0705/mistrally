@@ -45,7 +45,7 @@ export default function Login() {
   return (
     <AuthLayout
       title="Welcome back"
-      subtitle="Log in to continue learning with Mistrally."
+      subtitle="Log in to continue learning with sockRat."
       footer={
         <>
           No account?{" "}

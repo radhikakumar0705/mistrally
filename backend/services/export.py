@@ -27,7 +27,7 @@ def _sources(raw) -> list[str]:
 def to_markdown(session, messages) -> str:
     """A readable Markdown transcript: title, metadata, then each question and answer with its sources."""
     lines = [f"# {_one_line(session.title)}", ""]
-    meta = f"_Exported from Mistrally · {len(messages)} message{'s' if len(messages) != 1 else ''}"
+    meta = f"_Exported from sockRat · {len(messages)} message{'s' if len(messages) != 1 else ''}"
     if session.model:
         meta += f" · model: {_one_line(session.model)}"
     lines += [meta + "_", ""]
@@ -36,7 +36,7 @@ def to_markdown(session, messages) -> str:
         lines.append("_No messages yet._")
     for message in messages:
         asked = f" ({message.timestamp:%Y-%m-%d %H:%M} UTC)" if message.timestamp else ""
-        lines += ["---", "", f"**You:**{asked}", "", message.user_message, "", "**Mistrally:**", "", message.bot_response]
+        lines += ["---", "", f"**You:**{asked}", "", message.user_message, "", "**sockRat:**", "", message.bot_response]
         sources = _sources(message.sources)
         if sources:
             lines += ["", f"Sources: {', '.join(sources)}"]

@@ -31,24 +31,24 @@ def test_request_id_is_echoed_or_generated(client):
 
 
 def test_streamed_answer_records_llm_metrics(client, auth, ollama):
-    before_ttft = metric(client, "mistrally_llm_time_to_first_token_seconds_count", model="test-model")
-    before_done = metric(client, "mistrally_llm_streams_total", model="test-model", outcome="completed")
-    before_chunks = metric(client, "mistrally_llm_stream_chunks_total", model="test-model")
+    before_ttft = metric(client, "sockrat_llm_time_to_first_token_seconds_count", model="test-model")
+    before_done = metric(client, "sockrat_llm_streams_total", model="test-model", outcome="completed")
+    before_chunks = metric(client, "sockrat_llm_stream_chunks_total", model="test-model")
 
     session_id = client.post("/chat/sessions", headers=auth, json={}).get_json()["id"]
     read_events(client.post(f"/chat/sessions/{session_id}/messages", headers=auth, json={"message": "hi"}))
 
-    assert metric(client, "mistrally_llm_time_to_first_token_seconds_count", model="test-model") == before_ttft + 1
-    assert metric(client, "mistrally_llm_streams_total", model="test-model", outcome="completed") == before_done + 1
-    assert metric(client, "mistrally_llm_stream_chunks_total", model="test-model") == before_chunks + 3
+    assert metric(client, "sockrat_llm_time_to_first_token_seconds_count", model="test-model") == before_ttft + 1
+    assert metric(client, "sockrat_llm_streams_total", model="test-model", outcome="completed") == before_done + 1
+    assert metric(client, "sockrat_llm_stream_chunks_total", model="test-model") == before_chunks + 3
 
 
 def test_unavailable_model_is_counted(client, auth, ollama):
     ollama.fail_to_start = "down"
-    before = metric(client, "mistrally_llm_streams_total", outcome="unavailable")
+    before = metric(client, "sockrat_llm_streams_total", outcome="unavailable")
     session_id = client.post("/chat/sessions", headers=auth, json={}).get_json()["id"]
     client.post(f"/chat/sessions/{session_id}/messages", headers=auth, json={"message": "hi"})
-    assert metric(client, "mistrally_llm_streams_total", outcome="unavailable") == before + 1
+    assert metric(client, "sockrat_llm_streams_total", outcome="unavailable") == before + 1
 
 
 def test_http_metrics_use_route_templates(client, auth):
@@ -65,7 +65,7 @@ def test_json_logs_include_request_id(app):
 
     with app.test_request_context("/"):
         app.preprocess_request()
-        logging.getLogger("mistrally.test").info("hello", extra={"user_id": 7})
+        logging.getLogger("sockrat.test").info("hello", extra={"user_id": 7})
 
     line = json.loads(stream.getvalue().strip().splitlines()[-1])
     assert line["message"] == "hello"

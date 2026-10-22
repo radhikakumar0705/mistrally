@@ -2,7 +2,7 @@
 # host on http://localhost:8088 and https://localhost:8443 (only on loopback).
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
-name: mistrally
+name: sockrat
 nodes:
   - role: control-plane
     image: kindest/node:v1.31.0

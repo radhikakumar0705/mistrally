@@ -1,5 +1,5 @@
 """
-Mistrally code sandbox: runs short Python snippets for the "Run" button on code blocks.
+sockRat code sandbox: runs short Python snippets for the "Run" button on code blocks.
 
 Defense in depth; no single layer is trusted on its own:
   - the container has no route to the internet or the databases (Docker internal network / Kubernetes

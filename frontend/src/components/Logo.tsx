@@ -21,7 +21,7 @@ export default function Logo({ size = "md" }: { size?: Size }) {
   return (
     <span className="inline-flex items-center gap-2.5">
       <LogoMark size={size} />
-      <span className="text-lg font-semibold tracking-tight text-white">Mistrally</span>
+      <span className="text-lg font-semibold tracking-tight text-white">sockRat</span>
     </span>
   );
 }

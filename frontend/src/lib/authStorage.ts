@@ -3,7 +3,7 @@
 let accessToken: string | null = null;
 
 // Remembers that this browser has a session, so anonymous visitors don't trigger a refresh call
-const SESSION_HINT_KEY = "mistrally:session";
+const SESSION_HINT_KEY = "sockrat:session";
 
 export const getToken = (): string | null => accessToken;
 export const setToken = (token: string | null): void => {

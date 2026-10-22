@@ -8,7 +8,7 @@ export default function NavBar() {
   return (
     <header className="sticky top-0 z-20 border-b border-white/5 bg-zinc-950/70 backdrop-blur-xl">
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-        <Link to="/" aria-label="Mistrally home">
+        <Link to="/" aria-label="sockRat home">
           <Logo />
         </Link>
         <div className="flex items-center gap-2">

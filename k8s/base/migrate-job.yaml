@@ -1,5 +1,5 @@
 # Applies database migrations. Jobs are immutable, so delete the old one before re-applying:
-#   kubectl -n mistrally delete job migrate --ignore-not-found
+#   kubectl -n sockrat delete job migrate --ignore-not-found
 #   kubectl apply -k k8s/overlays/local
 apiVersion: batch/v1
 kind: Job
@@ -17,17 +17,17 @@ spec:
       securityContext: { runAsNonRoot: true, runAsUser: 10001 }
       containers:
         - name: migrate
-          image: mistrally-backend
+          image: sockrat-backend
           command: ["flask", "--app", "wsgi", "db", "upgrade"]
           envFrom:
             - configMapRef: { name: backend-config }
           env:
             - name: DB_PASSWORD
-              valueFrom: { secretKeyRef: { name: mistrally-secrets, key: MYSQL_PASSWORD } }
+              valueFrom: { secretKeyRef: { name: sockrat-secrets, key: MYSQL_PASSWORD } }
             - name: SECRET_KEY
-              valueFrom: { secretKeyRef: { name: mistrally-secrets, key: SECRET_KEY } }
+              valueFrom: { secretKeyRef: { name: sockrat-secrets, key: SECRET_KEY } }
             - name: JWT_SECRET_KEY
-              valueFrom: { secretKeyRef: { name: mistrally-secrets, key: JWT_SECRET_KEY } }
+              valueFrom: { secretKeyRef: { name: sockrat-secrets, key: JWT_SECRET_KEY } }
           resources:
             requests: { cpu: 50m, memory: 256Mi }
             limits: { memory: 768Mi }

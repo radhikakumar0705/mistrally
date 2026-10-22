@@ -8,7 +8,7 @@ const POLL_MS = 1500;
 const isPending = (doc: DocumentRecord) => doc.status === "queued" || doc.status === "processing";
 
 /**
- * The user's uploaded documents, which Mistrally searches when answering (RAG).
+ * The user's uploaded documents, which sockRat searches when answering (RAG).
  * Uploads are processed in the background, so pending documents are polled until they finish.
  */
 export function useDocuments() {

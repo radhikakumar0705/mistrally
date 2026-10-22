@@ -4,7 +4,7 @@
 #   DEMO_USER         SSH user, e.g. ubuntu
 #   DEMO_SSH_KEY      private key of a deploy-only key pair (public half in the VM's authorized_keys)
 #   DEMO_KNOWN_HOSTS  output of `ssh-keyscan <host>`, so the runner can verify it reached your VM
-# The VM is set up once with deploy/demo/setup-vm.sh, and keeps the Groq key in ~/mistrally.secrets.
+# The VM is set up once with deploy/demo/setup-vm.sh, and keeps the Groq key in ~/sockrat.secrets.
 name: Deploy demo
 
 on:
@@ -63,13 +63,13 @@ jobs:
           # REF ends up in a remote shell command: allow only characters git refs and SHAs use
           [[ "$REF" =~ ^[A-Za-z0-9._/-]+$ ]] || { echo "::error::Invalid ref: $REF"; exit 1; }
           ssh -i ~/.ssh/id_deploy -o StrictHostKeyChecking=yes "$USER_NAME@$HOST" \
-            "cd ~/mistrally && git fetch -q origin && git checkout -q --detach '$REF' && deploy/demo/setup-vm.sh '$REF'"
+            "cd ~/sockrat && git fetch -q origin && git checkout -q --detach '$REF' && deploy/demo/setup-vm.sh '$REF'"
 
       - name: Smoke test
         if: steps.config.outputs.enabled == 'true'
         env:
           USER_NAME: ${{ secrets.DEMO_USER }}
         run: |
-          site=$(ssh -i ~/.ssh/id_deploy "$USER_NAME@$HOST" "grep '^SITE_ADDRESS=' ~/mistrally/.env | cut -d= -f2")
+          site=$(ssh -i ~/.ssh/id_deploy "$USER_NAME@$HOST" "grep '^SITE_ADDRESS=' ~/sockrat/.env | cut -d= -f2")
           curl -fsS --retry 10 --retry-delay 6 --retry-all-errors "https://$site/api/health/ready"
           echo "### Deployed to https://$site" >> "$GITHUB_STEP_SUMMARY"

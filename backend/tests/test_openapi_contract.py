@@ -158,7 +158,7 @@ def test_every_route_is_documented(app):
 def test_spec_is_served(client):
     response = client.get("/openapi.yaml")
     assert response.status_code == 200
-    assert yaml.safe_load(response.data)["info"]["title"] == "Mistrally API"
+    assert yaml.safe_load(response.data)["info"]["title"] == "sockRat API"
     assert b"swagger-ui" in client.get("/docs").data
 
 

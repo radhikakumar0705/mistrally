@@ -1,4 +1,4 @@
-# Mistrally: full stack in Docker.
+# sockRat: full stack in Docker.
 #   cp .env.example .env    (fill in the secrets)
 #   docker compose up --build
 #   open http://localhost:8090
@@ -10,7 +10,7 @@
 # Monitoring (Prometheus :9090, Grafana :3001, Jaeger :16686):  docker compose --profile monitoring up
 # and set OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317 in .env to send traces.
 
-name: mistrally
+name: sockrat
 
 x-backend-env: &backend-env
   SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env}
@@ -21,8 +21,8 @@ x-backend-env: &backend-env
   GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
   DB_HOST: mysql
   DB_PORT: "3306"
-  DB_NAME: mistrally
-  DB_USER: mistrally
+  DB_NAME: sockrat
+  DB_USER: sockrat
   DB_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
   CHROMA_HOST: chroma
   CHROMA_PORT: "8000"
@@ -48,8 +48,8 @@ services:
     image: mysql:8.0.40
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: mistrally
-      MYSQL_USER: mistrally
+      MYSQL_DATABASE: sockrat
+      MYSQL_USER: sockrat
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
     command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
@@ -83,7 +83,7 @@ services:
   # One-shot job: apply database migrations before the API starts
   migrate:
     build: ./backend
-    image: mistrally-backend:local
+    image: sockrat-backend:local
     command: ["flask", "--app", "wsgi", "db", "upgrade"]
     environment: *backend-env
     depends_on:
@@ -92,7 +92,7 @@ services:
     restart: "no"
 
   backend:
-    image: mistrally-backend:local
+    image: sockrat-backend:local
     restart: unless-stopped
     environment:
       <<: *backend-env
@@ -110,7 +110,7 @@ services:
 
   # Processes uploaded documents from the Redis queue
   worker:
-    image: mistrally-backend:local
+    image: sockrat-backend:local
     restart: unless-stopped
     command: ["python", "worker.py"]
     environment: *backend-env
@@ -128,7 +128,7 @@ services:
   # databases aren't on it, so code can only reach the API that called it.
   sandbox:
     build: ./sandbox
-    image: mistrally-sandbox:local
+    image: sockrat-sandbox:local
     restart: unless-stopped
     environment:
       SANDBOX_TOKEN: ${SANDBOX_TOKEN:?Set SANDBOX_TOKEN in .env}
@@ -144,12 +144,12 @@ services:
 
   frontend:
     build: ./frontend
-    image: mistrally-frontend:local
+    image: sockrat-frontend:local
     restart: unless-stopped
     environment:
       BACKEND_HOST: backend:5000
     ports:
-      - "127.0.0.1:${MISTRALLY_PORT:-8090}:8080"
+      - "127.0.0.1:${SOCKRAT_PORT:-8090}:8080"
     depends_on:
       backend:
         condition: service_healthy
@@ -189,7 +189,7 @@ services:
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
-      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/mistrally-overview.json
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/sockrat-overview.json
     volumes:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro

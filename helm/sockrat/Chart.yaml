@@ -1,0 +1,10 @@
+apiVersion: v2
+name: sockrat
+description: sockRat, a private AI teaching assistant (Flask API, React app, RQ worker, code sandbox, MySQL, ChromaDB, Redis)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords: [llm, rag, flask, react, education]
+home: https://github.com/radhikakumar0705/sockrat
+sources:
+  - https://github.com/radhikakumar0705/sockrat

@@ -1,18 +1,18 @@
-# Default values for the Mistrally chart. Override with -f my-values.yaml or --set key=value.
+# Default values for the sockRat chart. Override with -f my-values.yaml or --set key=value.
 
 images:
   registry: ghcr.io/radhikakumar0705
   tag: ""          # defaults to the chart's appVersion
   pullPolicy: IfNotPresent
-  backend: mistrally-backend
-  frontend: mistrally-frontend
-  sandbox: mistrally-sandbox
+  backend: sockrat-backend
+  frontend: sockrat-frontend
+  sandbox: sockrat-sandbox
 
 # DNS suffix of the cluster; nginx needs fully qualified service names
 clusterDomain: cluster.local
 
 # Public URL of the site: used for Google OAuth redirects and secure cookies
-publicUrl: http://mistrally.localhost
+publicUrl: http://sockrat.localhost
 
 llm:
   provider: ollama          # ollama | groq | openai | fake
@@ -78,8 +78,8 @@ mysql:
 externalDatabase:
   host: ""
   port: 3306
-  name: mistrally
-  user: mistrally           # password comes from secrets.mysqlPassword / the existing secret
+  name: sockrat
+  user: sockrat           # password comes from secrets.mysqlPassword / the existing secret
 
 chroma:
   image: chromadb/chroma:1.3.5
@@ -92,11 +92,11 @@ redis:
 ingress:
   enabled: true
   className: nginx
-  host: mistrally.localhost
+  host: sockrat.localhost
   annotations: {}           # extra ingress annotations
   tls:
     enabled: false
-    secretName: mistrally-tls
+    secretName: sockrat-tls
     # cert-manager issuer that provisions the certificate, e.g. letsencrypt-prod or selfsigned
     clusterIssuer: ""
 

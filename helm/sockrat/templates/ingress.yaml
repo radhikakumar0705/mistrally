@@ -2,8 +2,8 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: mistrally
-  labels: {{- include "mistrally.labels" . | nindent 4 }}
+  name: sockrat
+  labels: {{- include "sockrat.labels" . | nindent 4 }}
   annotations:
     nginx.ingress.kubernetes.io/proxy-buffering: "off"  # stream chat tokens immediately
     nginx.ingress.kubernetes.io/proxy-read-timeout: "300"

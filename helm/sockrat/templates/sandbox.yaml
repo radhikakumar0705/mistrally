@@ -5,9 +5,9 @@ apiVersion: v1
 kind: Service
 metadata:
   name: sandbox
-  labels: {{- include "mistrally.labels" . | nindent 4 }}
+  labels: {{- include "sockrat.labels" . | nindent 4 }}
 spec:
-  selector: {{- include "mistrally.component" (list . "sandbox") | nindent 4 }}
+  selector: {{- include "sockrat.component" (list . "sandbox") | nindent 4 }}
   ports:
     - { name: http, port: 8080, targetPort: http }
 ---
@@ -15,14 +15,14 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: sandbox
-  labels: {{- include "mistrally.labels" . | nindent 4 }}
+  labels: {{- include "sockrat.labels" . | nindent 4 }}
 spec:
   replicas: 1
   selector:
-    matchLabels: {{- include "mistrally.component" (list . "sandbox") | nindent 6 }}
+    matchLabels: {{- include "sockrat.component" (list . "sandbox") | nindent 6 }}
   template:
     metadata:
-      labels: {{- include "mistrally.component" (list . "sandbox") | nindent 8 }}
+      labels: {{- include "sockrat.component" (list . "sandbox") | nindent 8 }}
     spec:
       automountServiceAccountToken: false  # executed code gets no Kubernetes API credentials
       enableServiceLinks: false            # nor environment variables describing other services
@@ -33,11 +33,11 @@ spec:
         seccompProfile: { type: RuntimeDefault }
       containers:
         - name: sandbox
-          image: {{ include "mistrally.image" (list . "sandbox") }}
+          image: {{ include "sockrat.image" (list . "sandbox") }}
           imagePullPolicy: {{ .Values.images.pullPolicy }}
           env:
             - name: SANDBOX_TOKEN
-              valueFrom: { secretKeyRef: { name: {{ include "mistrally.secretName" . }}, key: SANDBOX_TOKEN } }
+              valueFrom: { secretKeyRef: { name: {{ include "sockrat.secretName" . }}, key: SANDBOX_TOKEN } }
           ports:
             - { name: http, containerPort: 8080 }
           readinessProbe:
@@ -47,7 +47,7 @@ spec:
             httpGet: { path: /health, port: http }
             periodSeconds: 20
           resources: {{- toYaml .Values.sandbox.resources | nindent 12 }}
-          securityContext: {{- include "mistrally.containerSecurity" . | nindent 12 }}
+          securityContext: {{- include "sockrat.containerSecurity" . | nindent 12 }}
           volumeMounts:
             - { name: tmp, mountPath: /tmp }
       volumes:

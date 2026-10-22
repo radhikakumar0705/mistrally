@@ -1,12 +1,12 @@
 # Performance
 
-How Mistrally behaves under concurrent load, what profiling found, and what changed.
+How sockRat behaves under concurrent load, what profiling found, and what changed.
 
 ## Method
 
 - **Stack:** the Docker Compose deployment (nginx → gunicorn/Flask with 2 worker processes × 8 threads →
   MySQL, ChromaDB, Redis) with `docker-compose.test.yml`. That file swaps in the deterministic fake model
-  (a word every 20 ms), so the numbers measure Mistrally rather than an LLM's speed.
+  (a word every 20 ms), so the numbers measure sockRat rather than an LLM's speed.
 - **Load:** [k6](https://k6.io), using [`loadtest/chat.js`](../loadtest/chat.js). It ramps to 20 concurrent
   users over 20 s and holds for 60 s. Each iteration creates a conversation, sends a question and reads the
   full streamed answer, then lists conversations. Half the users have an indexed document, so their
@@ -19,7 +19,7 @@ How Mistrally behaves under concurrent load, what profiling found, and what chan
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.test.yml up -d --build
-docker run --rm -i --network mistrally_default -e BASE_URL=http://frontend:8080 \
+docker run --rm -i --network sockrat_default -e BASE_URL=http://frontend:8080 \
   -v "$PWD/loadtest:/scripts" grafana/k6:0.54.0 run /scripts/chat.js
 ```
 

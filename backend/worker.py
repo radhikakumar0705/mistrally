@@ -19,5 +19,5 @@ if __name__ == "__main__":
     url = app.config.get("TASK_QUEUE_URL")
     if not url:
         raise SystemExit("TASK_QUEUE_URL is not set")
-    logging.getLogger("mistrally.worker").info("Worker listening", extra={"queue": QUEUE_NAME})
+    logging.getLogger("sockrat.worker").info("Worker listening", extra={"queue": QUEUE_NAME})
     SimpleWorker([QUEUE_NAME], connection=Redis.from_url(url)).work()

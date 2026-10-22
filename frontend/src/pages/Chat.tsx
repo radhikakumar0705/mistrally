@@ -42,7 +42,7 @@ export default function ChatPage() {
     const google = params.get("google");
     if (!google) return;
     if (google === "linked") toast.success("Google account connected");
-    else if (google === "already_linked") toast.error("That Google account is already used by another Mistrally account");
+    else if (google === "already_linked") toast.error("That Google account is already used by another sockRat account");
     setParams({}, { replace: true });
   }, [params, setParams]);
 

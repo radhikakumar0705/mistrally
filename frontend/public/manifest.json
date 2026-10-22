@@ -1,9 +1,9 @@
 {
-  "short_name": "Mistrally",
-  "name": "Mistrally - AI teaching assistant",
+  "short_name": "sockRat",
+  "name": "sockRat - AI teaching assistant",
   "icons": [
     { "src": "favicon.svg", "type": "image/svg+xml", "sizes": "any" },
-    { "src": "mistrally.webp", "type": "image/webp", "sizes": "500x500" }
+    { "src": "sockrat.webp", "type": "image/webp", "sizes": "500x500" }
   ],
   "start_url": "/chat",
   "display": "standalone",

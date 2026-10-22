@@ -21,7 +21,7 @@ export default function AuthLayout({ title, subtitle, children, footer }: Props)
         transition={{ duration: 0.35 }}
         className="w-full max-w-sm"
       >
-        <Link to="/" className="mx-auto mb-8 flex w-fit" aria-label="Mistrally home">
+        <Link to="/" className="mx-auto mb-8 flex w-fit" aria-label="sockRat home">
           <LogoMark size="lg" />
         </Link>
         <div className="glass rounded-3xl p-8 shadow-2xl shadow-black/40">

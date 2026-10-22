@@ -32,10 +32,10 @@ spec:
         seccompProfile: { type: RuntimeDefault }
       containers:
         - name: sandbox
-          image: mistrally-sandbox
+          image: sockrat-sandbox
           env:
             - name: SANDBOX_TOKEN
-              valueFrom: { secretKeyRef: { name: mistrally-secrets, key: SANDBOX_TOKEN } }
+              valueFrom: { secretKeyRef: { name: sockrat-secrets, key: SANDBOX_TOKEN } }
           ports:
             - { name: http, containerPort: 8080 }
           readinessProbe:

@@ -1,6 +1,6 @@
 # Retrieval evaluation
 
-How often does Mistrally's document search hand the model the passage that answers the question,
+How often does sockRat's document search hand the model the passage that answers the question,
 and how often does it correctly hand over *nothing* when the documents can't answer it?
 
 Reproduce with `cd backend && python -m eval.run_retrieval --show-misses`. CI runs the same script with

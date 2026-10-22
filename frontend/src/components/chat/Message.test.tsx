@@ -37,7 +37,7 @@ describe("Message", () => {
     const { rerender } = render(
       <Message message={{ id: "a1", role: "assistant", content: "", pending: true }} isLast streaming />
     );
-    expect(screen.getByLabelText("Mistrally is thinking")).toBeInTheDocument();
+    expect(screen.getByLabelText("sockRat is thinking")).toBeInTheDocument();
 
     rerender(
       <Message message={{ id: "a1", role: "assistant", content: "", error: "Model unavailable" }} isLast streaming={false} />

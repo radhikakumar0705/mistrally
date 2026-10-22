@@ -1,9 +1,9 @@
 openapi: 3.1.0
 info:
-  title: Mistrally API
+  title: sockRat API
   version: 1.0.0
   description: |
-    API for Mistrally, a private AI teaching assistant.
+    API for sockRat, a private AI teaching assistant.
 
     **Authentication:** `POST /auth/login` returns a short-lived access token (send it as
     `Authorization: Bearer <token>`) and sets an httpOnly refresh-token cookie. When the access token

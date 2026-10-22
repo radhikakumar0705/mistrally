@@ -1,6 +1,6 @@
-# Mistrally design
+# sockRat design
 
-Mistrally is a private AI teaching assistant for programmers: chat with a local or hosted language model,
+sockRat is a private AI teaching assistant for programmers: chat with a local or hosted language model,
 ask questions about your own notes (retrieval-augmented generation), and practise with generated quizzes,
 flashcards and runnable code. This document explains how it is built and why.
 
@@ -84,7 +84,7 @@ when to commit.
 **Strategy pattern (model providers).** `services/llm/base.py` defines the `Provider` interface
 (`stream_chat`, `complete_json`, `list_models`). `OllamaProvider`, `OpenAICompatibleProvider` (Groq, OpenAI)
 and `FakeProvider` are interchangeable strategies, and `get_provider()` selects one from `LLM_PROVIDER`.
-Switching Mistrally from local Mistral to a hosted Llama model is a configuration change. Each strategy
+Switching sockRat from local Mistral to a hosted Llama model is a configuration change. Each strategy
 also supports schema-constrained JSON (Ollama enforces the schema during generation; OpenAI-compatible APIs
 use JSON mode), which the quiz generator relies on.
 

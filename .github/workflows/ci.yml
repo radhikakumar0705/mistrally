@@ -103,12 +103,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: docker build -t mistrally-sandbox:ci sandbox
+      - run: docker build -t sockrat-sandbox:ci sandbox
       - name: Run the limit checks with production restrictions
         run: >
           docker run --rm --network none --read-only --tmpfs /tmp:size=16m --cap-drop ALL
           --security-opt no-new-privileges --memory 512m --pids-limit 64 --cpus 1
-          mistrally-sandbox:ci python smoke_test.py
+          sockrat-sandbox:ci python smoke_test.py
 
   manifests:
     name: Compose + Kubernetes manifests
@@ -131,8 +131,8 @@ jobs:
         run: |
           mkdir rendered
           for values in values.yaml values-kind.yaml values-gke.yaml; do
-            helm lint helm/mistrally -f "helm/mistrally/$values"
-            helm template mistrally helm/mistrally -n mistrally -f "helm/mistrally/$values" > "rendered/$values"
+            helm lint helm/sockrat -f "helm/sockrat/$values"
+            helm template sockrat helm/sockrat -n sockrat -f "helm/sockrat/$values" > "rendered/$values"
           done
           cp deploy/cert-manager/*.yaml deploy/argocd/*.yaml rendered/
       - name: Validate chart output, cert-manager and Argo CD resources
@@ -183,7 +183,7 @@ jobs:
       - id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/mistrally-${{ matrix.component }}
+          images: ghcr.io/${{ github.repository_owner }}/sockrat-${{ matrix.component }}
           tags: |
             type=sha,format=short
             type=ref,event=branch
@@ -192,20 +192,20 @@ jobs:
         with:
           context: ${{ matrix.component }}
           load: true
-          tags: mistrally-${{ matrix.component }}:scan
+          tags: sockrat-${{ matrix.component }}:scan
           cache-from: type=gha,scope=${{ matrix.component }}
           cache-to: type=gha,mode=max,scope=${{ matrix.component }}
       - name: Vulnerability scan (fails on fixable HIGH/CRITICAL)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
         with:
-          image-ref: mistrally-${{ matrix.component }}:scan
+          image-ref: sockrat-${{ matrix.component }}:scan
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: "1"
       - name: Software bill of materials (SPDX)
         uses: anchore/sbom-action@v0
         with:
-          image: mistrally-${{ matrix.component }}:scan
+          image: sockrat-${{ matrix.component }}:scan
           format: spdx-json
           artifact-name: sbom-${{ matrix.component }}.spdx.json
       - name: Push

@@ -59,7 +59,7 @@ export default function Composer({ onSend, onStop, onUpload, streaming, uploadin
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
             className="icon-btn h-10 w-10 rounded-xl"
-            title="Add a PDF, TXT or Markdown document for Mistrally to use"
+            title="Add a PDF, TXT or Markdown document for sockRat to use"
             aria-label="Upload document"
           >
             {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Paperclip className="h-5 w-5" />}
@@ -71,7 +71,7 @@ export default function Composer({ onSend, onStop, onUpload, streaming, uploadin
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="Ask Mistrally anything…"
+            placeholder="Ask sockRat anything…"
             aria-label="Message"
             className="scrollbar-thin max-h-[200px] min-h-[40px] flex-1 resize-none bg-transparent px-1 py-2.5 text-[15px] leading-relaxed text-zinc-100 outline-none placeholder:text-zinc-500 focus-visible:ring-0 focus-visible:ring-offset-0"
           />
@@ -101,7 +101,7 @@ export default function Composer({ onSend, onStop, onUpload, streaming, uploadin
         </div>
         <p className="mt-2 text-center text-xs text-zinc-500">
           <kbd className="font-sans">Enter</kbd> to send · <kbd className="font-sans">Shift + Enter</kbd> for a new
-          line · Mistrally runs on local models and can make mistakes.
+          line · sockRat runs on local models and can make mistakes.
         </p>
       </div>
     </div>

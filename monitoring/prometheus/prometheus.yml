@@ -6,7 +6,7 @@ rule_files:
   - /etc/prometheus/alerts.yml
 
 scrape_configs:
-  - job_name: mistrally-backend
+  - job_name: sockrat-backend
     metrics_path: /metrics
     static_configs:
       - targets: ["backend:5000"]

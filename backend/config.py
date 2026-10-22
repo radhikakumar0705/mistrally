@@ -18,7 +18,7 @@ def _database_uri():
     password = quote_plus(os.getenv("DB_PASSWORD", ""))
     host = os.getenv("DB_HOST", "localhost")
     port = os.getenv("DB_PORT", "3306")
-    name = os.getenv("DB_NAME", "mistrally")
+    name = os.getenv("DB_NAME", "sockrat")
     return f"mysql+mysqlconnector://{user}:{password}@{host}:{port}/{name}"
 
 
@@ -104,5 +104,5 @@ class Config:
     LOG_FORMAT = os.getenv("LOG_FORMAT", "text")  # "json" in containers
     # Traces go to this OTLP gRPC endpoint (e.g. http://jaeger:4317) when set
     OTEL_EXPORTER_OTLP_ENDPOINT = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
-    OTEL_SERVICE_NAME = os.getenv("OTEL_SERVICE_NAME", "mistrally-backend")
+    OTEL_SERVICE_NAME = os.getenv("OTEL_SERVICE_NAME", "sockrat-backend")
     DEBUG = _bool("DEBUG", False)

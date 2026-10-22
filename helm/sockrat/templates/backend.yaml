@@ -3,10 +3,10 @@ kind: Service
 metadata:
   name: backend
   labels:
-    {{- include "mistrally.labels" . | nindent 4 }}
+    {{- include "sockrat.labels" . | nindent 4 }}
     app.kubernetes.io/name: backend
 spec:
-  selector: {{- include "mistrally.component" (list . "backend") | nindent 4 }}
+  selector: {{- include "sockrat.component" (list . "backend") | nindent 4 }}
   ports:
     - { name: http, port: 5000, targetPort: http }
 ---
@@ -14,7 +14,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: backend
-  labels: {{- include "mistrally.labels" . | nindent 4 }}
+  labels: {{- include "sockrat.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.backend.autoscaling.enabled }}
   replicas: {{ .Values.backend.replicas }}
@@ -23,10 +23,10 @@ spec:
     type: RollingUpdate
     rollingUpdate: { maxUnavailable: 0, maxSurge: 1 }
   selector:
-    matchLabels: {{- include "mistrally.component" (list . "backend") | nindent 6 }}
+    matchLabels: {{- include "sockrat.component" (list . "backend") | nindent 6 }}
   template:
     metadata:
-      labels: {{- include "mistrally.component" (list . "backend") | nindent 8 }}
+      labels: {{- include "sockrat.component" (list . "backend") | nindent 8 }}
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "5000"
@@ -43,13 +43,13 @@ spec:
       terminationGracePeriodSeconds: 40  # let in-flight streamed answers finish
       containers:
         - name: backend
-          image: {{ include "mistrally.image" (list . "backend") }}
+          image: {{ include "sockrat.image" (list . "backend") }}
           imagePullPolicy: {{ .Values.images.pullPolicy }}
           ports:
             - { name: http, containerPort: 5000 }
           envFrom:
             - configMapRef: { name: backend-config }
-          env: {{- include "mistrally.backendSecretEnv" . | nindent 12 }}
+          env: {{- include "sockrat.backendSecretEnv" . | nindent 12 }}
           startupProbe:
             httpGet: { path: /health/live, port: http }
             periodSeconds: 3
@@ -63,7 +63,7 @@ spec:
             periodSeconds: 20
             timeoutSeconds: 3
           resources: {{- toYaml .Values.backend.resources | nindent 12 }}
-          securityContext: {{- include "mistrally.containerSecurity" . | nindent 12 }}
+          securityContext: {{- include "sockrat.containerSecurity" . | nindent 12 }}
           volumeMounts:
             - { name: tmp, mountPath: /tmp }
       volumes:
@@ -74,7 +74,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: backend
-  labels: {{- include "mistrally.labels" . | nindent 4 }}
+  labels: {{- include "sockrat.labels" . | nindent 4 }}
 spec:
   scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: backend }
   minReplicas: {{ .Values.backend.autoscaling.minReplicas }}
@@ -90,8 +90,8 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: backend
-  labels: {{- include "mistrally.labels" . | nindent 4 }}
+  labels: {{- include "sockrat.labels" . | nindent 4 }}
 spec:
   minAvailable: 1
   selector:
-    matchLabels: {{- include "mistrally.component" (list . "backend") | nindent 6 }}
+    matchLabels: {{- include "sockrat.component" (list . "backend") | nindent 6 }}

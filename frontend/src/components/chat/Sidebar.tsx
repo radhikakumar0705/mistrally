@@ -175,7 +175,7 @@ function DocumentsPanel({ documents, uploading, onUpload, onRemove }: DocumentsP
         <ul className="scrollbar-thin mt-2 max-h-40 space-y-0.5 overflow-y-auto">
           {documents.length === 0 ? (
             <li className="px-2 py-1.5 text-xs leading-relaxed text-zinc-500">
-              Upload notes or docs and Mistrally will use them in its answers.
+              Upload notes or docs and sockRat will use them in its answers.
             </li>
           ) : (
             documents.map((doc) => (

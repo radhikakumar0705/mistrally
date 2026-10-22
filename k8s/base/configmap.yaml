@@ -5,8 +5,8 @@ metadata:
 data:
   DB_HOST: mysql
   DB_PORT: "3306"
-  DB_NAME: mistrally
-  DB_USER: mistrally
+  DB_NAME: sockrat
+  DB_USER: sockrat
   CHROMA_HOST: chroma
   CHROMA_PORT: "8000"
   # Ollama on the host machine (Docker Desktop / kind); the "ollama" component points this in-cluster
@@ -19,6 +19,6 @@ data:
   # ingress-nginx -> frontend nginx -> backend
   PROXY_FIX_HOPS: "2"
   LOG_LEVEL: INFO
-  PUBLIC_URL: http://mistrally.localhost
+  PUBLIC_URL: http://sockrat.localhost
   COOKIE_SECURE: "false"
   WEB_CONCURRENCY: "2"

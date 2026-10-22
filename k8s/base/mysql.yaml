@@ -14,7 +14,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: mysql
-  labels: { app.kubernetes.io/name: mysql, app.kubernetes.io/part-of: mistrally }
+  labels: { app.kubernetes.io/name: mysql, app.kubernetes.io/part-of: sockrat }
 spec:
   serviceName: mysql
   replicas: 1
@@ -22,19 +22,19 @@ spec:
     matchLabels: { app.kubernetes.io/name: mysql }
   template:
     metadata:
-      labels: { app.kubernetes.io/name: mysql, app.kubernetes.io/part-of: mistrally }
+      labels: { app.kubernetes.io/name: mysql, app.kubernetes.io/part-of: sockrat }
     spec:
       containers:
         - name: mysql
           image: mysql:8.0.40
           args: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
           env:
-            - { name: MYSQL_DATABASE, value: mistrally }
-            - { name: MYSQL_USER, value: mistrally }
+            - { name: MYSQL_DATABASE, value: sockrat }
+            - { name: MYSQL_USER, value: sockrat }
             - name: MYSQL_PASSWORD
-              valueFrom: { secretKeyRef: { name: mistrally-secrets, key: MYSQL_PASSWORD } }
+              valueFrom: { secretKeyRef: { name: sockrat-secrets, key: MYSQL_PASSWORD } }
             - name: MYSQL_ROOT_PASSWORD
-              valueFrom: { secretKeyRef: { name: mistrally-secrets, key: MYSQL_ROOT_PASSWORD } }
+              valueFrom: { secretKeyRef: { name: sockrat-secrets, key: MYSQL_ROOT_PASSWORD } }
           ports:
             - { name: mysql, containerPort: 3306 }
           readinessProbe:

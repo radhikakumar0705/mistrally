@@ -1,4 +1,4 @@
-# GKE cluster for Mistrally: a private, VPC-native cluster with Dataplane V2 (so the chart's
+# GKE cluster for sockRat: a private, VPC-native cluster with Dataplane V2 (so the chart's
 # NetworkPolicies are enforced), Workload Identity, a least-privilege node service account,
 # Cloud NAT for outbound traffic from private nodes, Artifact Registry for the images and a
 # static IP for the ingress controller.
@@ -82,7 +82,7 @@ resource "google_artifact_registry_repository" "images" {
   repository_id = var.name
   location      = var.region
   format        = "DOCKER"
-  description   = "Mistrally container images"
+  description   = "sockRat container images"
 
   cleanup_policies {
     id     = "keep-recent"
@@ -109,7 +109,7 @@ resource "google_artifact_registry_repository" "images" {
 # default Compute Engine account (which has Editor on the whole project)
 resource "google_service_account" "nodes" {
   account_id   = "${var.name}-nodes"
-  display_name = "Mistrally GKE nodes"
+  display_name = "sockRat GKE nodes"
 }
 
 resource "google_project_iam_member" "nodes" {

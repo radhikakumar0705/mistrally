@@ -4,7 +4,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: migrate
-  labels: {{- include "mistrally.labels" . | nindent 4 }}
+  labels: {{- include "sockrat.labels" . | nindent 4 }}
   annotations:
     helm.sh/hook: post-install,pre-upgrade
     helm.sh/hook-delete-policy: before-hook-creation
@@ -17,7 +17,7 @@ spec:
   backoffLimit: 10  # MySQL may still be starting on a fresh install
   template:
     metadata:
-      labels: {{- include "mistrally.component" (list . "migrate") | nindent 8 }}
+      labels: {{- include "sockrat.component" (list . "migrate") | nindent 8 }}
     spec:
       restartPolicy: OnFailure
       securityContext:
@@ -26,16 +26,16 @@ spec:
         seccompProfile: { type: RuntimeDefault }
       containers:
         - name: migrate
-          image: {{ include "mistrally.image" (list . "backend") }}
+          image: {{ include "sockrat.image" (list . "backend") }}
           imagePullPolicy: {{ .Values.images.pullPolicy }}
           command: ["flask", "--app", "wsgi", "db", "upgrade"]
           envFrom:
             - configMapRef: { name: backend-config }
-          env: {{- include "mistrally.backendSecretEnv" . | nindent 12 }}
+          env: {{- include "sockrat.backendSecretEnv" . | nindent 12 }}
           resources:
             requests: { cpu: 50m, memory: 256Mi }
             limits: { memory: 768Mi }
-          securityContext: {{- include "mistrally.containerSecurity" . | nindent 12 }}
+          securityContext: {{- include "sockrat.containerSecurity" . | nindent 12 }}
           volumeMounts:
             - { name: tmp, mountPath: /tmp }
       volumes:

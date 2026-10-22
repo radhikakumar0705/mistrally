@@ -15,7 +15,7 @@ const FEATURES = [
   {
     icon: FileText,
     title: "Chat with your notes",
-    text: "Upload PDFs or text files. Mistrally finds the relevant passages and cites them.",
+    text: "Upload PDFs or text files. sockRat finds the relevant passages and cites them.",
   },
   {
     icon: ShieldCheck,
@@ -103,7 +103,7 @@ export default function Home() {
             transition={{ delay: 0.1 }}
             className="mt-5 max-w-xl text-lg text-zinc-400"
           >
-            Mistrally explains concepts, debugs your code and answers questions about your own notes, all on
+            sockRat explains concepts, debugs your code and answers questions about your own notes, all on
             models running on your machine.
           </motion.p>
           <motion.div

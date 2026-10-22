@@ -3,10 +3,10 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: backend
-  labels: {{- include "mistrally.labels" . | nindent 4 }}
+  labels: {{- include "sockrat.labels" . | nindent 4 }}
 spec:
   selector:
-    matchLabels: {{- include "mistrally.component" (list . "backend") | nindent 6 }}
+    matchLabels: {{- include "sockrat.component" (list . "backend") | nindent 6 }}
   endpoints:
     - port: http
       path: /metrics

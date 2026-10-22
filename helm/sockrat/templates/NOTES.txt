@@ -1,4 +1,4 @@
-Mistrally {{ .Chart.AppVersion }} is installed in namespace {{ .Release.Namespace }}.
+sockRat {{ .Chart.AppVersion }} is installed in namespace {{ .Release.Namespace }}.
 {{- if .Values.ingress.enabled }}
 
 Open {{ .Values.publicUrl }} once the pods are ready:
@@ -13,5 +13,5 @@ Migrations ran as the "migrate" hook Job:
   kubectl -n {{ .Release.Namespace }} logs job/migrate
 {{- if not .Values.secrets.existingSecret }}
 
-Secrets were generated into "mistrally-secrets" and are kept across upgrades and uninstalls.
+Secrets were generated into "sockrat-secrets" and are kept across upgrades and uninstalls.
 {{- end }}

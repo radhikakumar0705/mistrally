@@ -30,7 +30,7 @@ jobs:
           for _ in $(seq 1 60); do curl -sf http://localhost:8090/api/health/ready && break; sleep 5; done
       - name: Run k6
         run: |
-          docker run --rm -i --network mistrally_default -e BASE_URL=http://frontend:8080 \
+          docker run --rm -i --network sockrat_default -e BASE_URL=http://frontend:8080 \
             -e USERS=${{ inputs.users }} -v "$PWD/loadtest:/scripts" grafana/k6:0.54.0 \
             run --summary-export=/scripts/summary.json /scripts/chat.js
       - uses: actions/upload-artifact@v4

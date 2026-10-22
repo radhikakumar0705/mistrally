@@ -18,7 +18,7 @@ SWAGGER_UI_HTML = """<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Mistrally API</title>
+  <title>sockRat API</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/swagger-ui.css">
 </head>
 <body>
@@ -79,7 +79,7 @@ def create_app(config_object=Config):
 
     @app.route("/")
     def home():
-        return jsonify({"message": "Mistrally backend running", "docs": "/docs"}), 200
+        return jsonify({"message": "sockRat backend running", "docs": "/docs"}), 200
 
     @app.route("/openapi.yaml")
     @limiter.exempt

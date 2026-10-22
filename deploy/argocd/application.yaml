@@ -1,26 +1,26 @@
-# GitOps: Argo CD keeps the cluster in sync with helm/mistrally on GitHub. Push a change to the
+# GitOps: Argo CD keeps the cluster in sync with helm/sockrat on GitHub. Push a change to the
 # chart or its values and Argo CD rolls it out; edit the cluster by hand and it puts it back.
 #   kubectl apply -n argocd -f deploy/argocd/application.yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: mistrally
+  name: sockrat
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io  # deleting the Application removes what it deployed
 spec:
   project: default
   source:
-    repoURL: https://github.com/radhikakumar0705/mistrally.git
+    repoURL: https://github.com/radhikakumar0705/sockrat.git
     targetRevision: master
-    path: helm/mistrally
+    path: helm/sockrat
     helm:
-      releaseName: mistrally
+      releaseName: sockrat
       valueFiles:
         - values-kind.yaml
   destination:
     server: https://kubernetes.default.svc
-    namespace: mistrally
+    namespace: sockrat
   syncPolicy:
     automated:
       prune: true     # delete resources removed from the chart
@@ -35,5 +35,5 @@ spec:
   # render has new random values: create the Secret once, then leave its data alone.
   ignoreDifferences:
     - kind: Secret
-      name: mistrally-secrets
+      name: sockrat-secrets
       jsonPointers: [/data]

@@ -7,7 +7,7 @@ from flask import current_app
 
 from services.embeddings import embedder
 
-COLLECTION_NAME = "mistrally_docs"
+COLLECTION_NAME = "sockrat_docs"
 
 
 @lru_cache(maxsize=1)

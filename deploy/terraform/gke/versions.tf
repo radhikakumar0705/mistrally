@@ -11,7 +11,7 @@ terraform {
   # Keep state in a versioned GCS bucket so it is shared and locked:
   # backend "gcs" {
   #   bucket = "my-project-tfstate"
-  #   prefix = "mistrally/gke"
+  #   prefix = "sockrat/gke"
   # }
 }
 

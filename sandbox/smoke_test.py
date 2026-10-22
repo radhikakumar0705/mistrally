@@ -1,7 +1,7 @@
 """
 Checks that the sandbox's limits actually hold. Runs inside the sandbox image (CI does this too):
 
-    docker run --rm --network none mistrally-sandbox:local python smoke_test.py
+    docker run --rm --network none sockrat-sandbox:local python smoke_test.py
 """
 import sys
 

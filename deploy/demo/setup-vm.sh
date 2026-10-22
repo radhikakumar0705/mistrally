@@ -2,7 +2,7 @@
 # Sets up (or updates) the live demo on a fresh Ubuntu 22.04/24.04 VM, amd64 or arm64.
 # Run it on the VM as a normal user with sudo:
 #
-#   curl -fsSL https://raw.githubusercontent.com/radhikakumar0705/mistrally/master/deploy/demo/setup-vm.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/radhikakumar0705/sockrat/master/deploy/demo/setup-vm.sh | bash
 #
 # or, from a checkout, deploy/demo/setup-vm.sh [git-ref]. Re-running it updates the code and restarts.
 #
@@ -10,14 +10,14 @@
 #   SITE_ADDRESS  public hostname; defaults to <public-ip>.sslip.io, which needs no domain
 #   REPO_REF      branch, tag or commit to deploy (default: master, or the first argument)
 #
-# The Groq API key is read from ~/mistrally.secrets, which you create yourself:
-#   echo "GROQ_API_KEY=gsk_..." > ~/mistrally.secrets && chmod 600 ~/mistrally.secrets
+# The Groq API key is read from ~/sockrat.secrets, which you create yourself:
+#   echo "GROQ_API_KEY=gsk_..." > ~/sockrat.secrets && chmod 600 ~/sockrat.secrets
 set -euo pipefail
 
-REPO_URL=https://github.com/radhikakumar0705/mistrally.git
-APP_DIR="$HOME/mistrally"
+REPO_URL=https://github.com/radhikakumar0705/sockrat.git
+APP_DIR="$HOME/sockrat"
 REPO_REF="${1:-${REPO_REF:-master}}"
-SECRETS_FILE="$HOME/mistrally.secrets"
+SECRETS_FILE="$HOME/sockrat.secrets"
 COMPOSE=(docker compose -f docker-compose.yml -f docker-compose.prod.yml)
 
 log() { printf '\n==> %s\n' "$*"; }
@@ -88,7 +88,7 @@ if [[ ! -f .env ]]; then
   } > .env
 fi
 
-# The Groq key lives only in ~/mistrally.secrets; copy it into .env on every run so rotating it is
+# The Groq key lives only in ~/sockrat.secrets; copy it into .env on every run so rotating it is
 # just editing that file and re-running this script
 grep -v '^GROQ_API_KEY=' .env > .env.tmp || true
 grep '^GROQ_API_KEY=' "$SECRETS_FILE" >> .env.tmp
